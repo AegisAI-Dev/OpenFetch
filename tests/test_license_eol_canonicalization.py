@@ -29,7 +29,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GITATTRIBUTES = PROJECT_ROOT / ".gitattributes"
 LICENSE_ROOT = PROJECT_ROOT / "licenses"
 LICENSE_MANIFEST = LICENSE_ROOT / "RELEASE-LICENSE-MANIFEST.sha256"
-BRIDGE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-bridge-release.yml"
+BRIDGE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-onefile-release.yml"
 PRODUCTION_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-release.yml"
 
 # The exact CI-reported set. Kept literal so a silent drift in the override list
@@ -266,15 +266,15 @@ def test_no_skip_or_xfail_workaround_in_the_affected_tests():
     assert "== []" in contract
 
 
-def test_bridge_still_publishes_exactly_four_stable_assets():
+def test_release_publishes_exactly_the_openfetch_asset_family():
     workflow = BRIDGE_WORKFLOW.read_text(encoding="utf-8")
-    publish = workflow.split("Publish the stable bridge release", 1)[1]
+    publish = workflow.split("Publish the stable OpenFetch release", 1)[1]
     assets = re.findall(r"^            dist/(.+)$", publish, flags=re.MULTILINE)
     assert assets == [
-        "NeuralExtractorV3.exe",
-        "NeuralExtractorV3-3.0.8-windows-x64.exe",
-        "NeuralExtractorV3-3.0.8-windows-x64.exe.sha256",
-        "NeuralExtractorV3-3.0.8-manifest.json",
+        "OpenFetch.exe",
+        "OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe",
+        "OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe.sha256",
+        "OpenFetch-${{ env.RELEASE_VERSION }}-manifest.json",
     ]
     assert "draft: false" in publish
     assert "prerelease: false" in publish
@@ -286,7 +286,7 @@ def test_build_inputs_are_not_release_assets():
     workflow = BRIDGE_WORKFLOW.read_text(encoding="utf-8")
     artifact = workflow.split("Upload workflow artifact", 1)[1].split("- name:", 1)[0]
     assert "build_inputs" not in artifact
-    publish = workflow.split("Publish the stable bridge release", 1)[1]
+    publish = workflow.split("Publish the stable OpenFetch release", 1)[1]
     assert "build_inputs" not in publish
 
 

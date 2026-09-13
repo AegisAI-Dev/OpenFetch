@@ -3,23 +3,39 @@ from pathlib import Path
 
 import pytest
 
-from neural_extractor_v3.core.update_manifest import MIN_UPDATE_SIZE_BYTES, is_newer_version
-from scripts.release_tools import generate_manifest, validate_release_versions
+from openfetch.core.update_manifest import MIN_UPDATE_SIZE_BYTES, is_newer_version
+from scripts.release_tools import (
+    generate_manifest,
+    render_version_info,
+    validate_release_versions,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def write_project_versions(root: Path, config_version: str, package_version: str) -> None:
-    config = root / "src" / "neural_extractor_v3" / "config.py"
+def write_project_versions(root: Path, config_version: str, *, dynamic: bool = True) -> None:
+    config = root / "src" / "openfetch" / "config.py"
     config.parent.mkdir(parents=True, exist_ok=True)
-    config.write_text(f'APP_NAME = "Neural Extractor V3"\nVERSION = "{config_version}"\n')
-    (root / "pyproject.toml").write_text(
-        f'[project]\nname = "neural-extractor-v3"\nversion = "{package_version}"\n'
+    config.write_text(
+        'APP_NAME = "OpenFetch"\nAPP_PUBLISHER = "Brainbyte"\n'
+        f'EXECUTABLE_STEM = "OpenFetch"\nVERSION = "{config_version}"\n'
     )
+    if dynamic:
+        pyproject = (
+            '[project]\nname = "openfetch"\ndynamic = ["version"]\n\n'
+            '[tool.setuptools.dynamic]\nversion = {attr = "openfetch.config.VERSION"}\n'
+        )
+    else:
+        pyproject = f'[project]\nname = "openfetch"\nversion = "{config_version}"\n'
+    (root / "pyproject.toml").write_text(pyproject)
+    try:
+        (root / "version_info.txt").write_text(render_version_info(root), encoding="utf-8")
+    except ValueError:
+        (root / "version_info.txt").write_text("", encoding="utf-8")
 
 
 def test_release_version_validation_requires_tag_and_both_sources_to_match(tmp_path):
-    write_project_versions(tmp_path, "3.0.2", "3.0.2")
+    write_project_versions(tmp_path, "3.0.2")
 
     assert validate_release_versions(tmp_path, "v3.0.2") == "3.0.2"
     assert validate_release_versions(tmp_path, "3.0.2") == "3.0.2"
@@ -28,8 +44,16 @@ def test_release_version_validation_requires_tag_and_both_sources_to_match(tmp_p
         validate_release_versions(tmp_path, "v3.0.3")
 
 
-def test_current_308_source_versions_and_release_ref_are_consistent():
-    assert validate_release_versions(PROJECT_ROOT, "v3.0.8") == "3.0.8"
+def test_current_source_versions_and_release_ref_are_consistent():
+    assert validate_release_versions(PROJECT_ROOT, "v3.1.0") == "3.1.0"
+
+
+def test_version_info_is_generated_from_the_single_version_source():
+    version_info = (PROJECT_ROOT / "version_info.txt").read_text(encoding="utf-8")
+    assert version_info == render_version_info(PROJECT_ROOT)
+    assert 'StringStruct("ProductName", "OpenFetch")' in version_info
+    assert 'StringStruct("OriginalFilename", "OpenFetch.exe")' in version_info
+    assert "filevers=(3, 1, 0, 0)" in version_info
 
 
 def test_v307_release_notes_describe_unicode_hotfix_and_preserved_guarantees():
@@ -97,31 +121,57 @@ def test_304_is_newer_than_both_affected_updater_versions():
 
 
 def test_release_version_validation_rejects_source_disagreement_and_invalid_semver(tmp_path):
-    write_project_versions(tmp_path, "3.0.2", "3.0.3")
-    with pytest.raises(ValueError, match="Version mismatch"):
+    write_project_versions(tmp_path, "3.0.2", dynamic=False)
+    with pytest.raises(ValueError, match="static project.version"):
         validate_release_versions(tmp_path, "v3.0.2")
 
-    write_project_versions(tmp_path, "3.0.2-beta", "3.0.2-beta")
+    write_project_versions(tmp_path, "3.0.2")
+    (tmp_path / "version_info.txt").write_text("stale", encoding="utf-8")
+    with pytest.raises(ValueError, match="version_info.txt"):
+        validate_release_versions(tmp_path, "v3.0.2")
+
+    write_project_versions(tmp_path, "3.0.2-beta")
     with pytest.raises(ValueError):
         validate_release_versions(tmp_path, "v3.0.2-beta")
 
 
 def test_manifest_generator_hashes_exact_versioned_executable(tmp_path):
-    executable = tmp_path / "NeuralExtractorV3-3.0.4-windows-x64.exe"
+    executable = tmp_path / "OpenFetch-3.1.0-windows-x64.exe"
     executable.write_bytes(b"E" * MIN_UPDATE_SIZE_BYTES)
-    output = tmp_path / "NeuralExtractorV3-3.0.4-manifest.json"
+    output = tmp_path / "OpenFetch-3.1.0-manifest.json"
 
     manifest = generate_manifest(
-        version="3.0.4",
+        version="3.1.0",
         executable=executable,
         output=output,
     )
     payload = json.loads(output.read_text(encoding="utf-8"))
 
     assert manifest.asset_size == MIN_UPDATE_SIZE_BYTES
+    assert payload["application_name"] == "OpenFetch"
     assert payload["asset_filename"] == executable.name
-    assert payload["release_version"] == "3.0.4"
+    assert payload["release_version"] == "3.1.0"
+    assert payload["minimum_updater_version"] == "3.1.0"
+
+
+def test_manifest_generator_writes_the_legacy_compatibility_manifest(tmp_path):
+    executable = tmp_path / "NeuralExtractorV3-3.1.0-windows-x64.exe"
+    executable.write_bytes(b"E" * MIN_UPDATE_SIZE_BYTES)
+    output = tmp_path / "NeuralExtractorV3-3.1.0-manifest.json"
+
+    generate_manifest(version="3.1.0", executable=executable, output=output, naming="legacy")
+    payload = json.loads(output.read_text(encoding="utf-8"))
+
+    assert payload["application_name"] == "Neural Extractor V3"
+    assert payload["asset_filename"] == "NeuralExtractorV3-3.1.0-windows-x64.exe"
     assert payload["minimum_updater_version"] == "3.0.4"
+    with pytest.raises(ValueError, match="Manifest output must be named"):
+        generate_manifest(
+            version="3.1.0",
+            executable=executable,
+            output=tmp_path / "OpenFetch-3.1.0-manifest.json",
+            naming="legacy",
+        )
 
 
 def test_workflow_contains_mandatory_version_gate_and_manifest_publication():
@@ -153,7 +203,7 @@ def test_workflow_contains_mandatory_version_gate_and_manifest_publication():
 
 def test_release_notes_and_packaging_require_all_v304_runtime_and_handoff_guarantees():
     notes = Path("docs/release-notes/V3.0.4.md").read_text(encoding="utf-8")
-    spec = Path("NeuralExtractorV3.spec").read_text(encoding="utf-8")
+    spec = Path("OpenFetch.spec").read_text(encoding="utf-8")
 
     for statement in (
         "Another updater process owns this installation",

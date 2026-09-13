@@ -1,5 +1,11 @@
 # Neural Extractor V3.0.8 third-party notices
 
+> OpenFetch is the renamed Neural Extractor V3. Version-specific evidence in this
+> document was recorded for the audited Neural Extractor V3.0.8 candidate; artifact
+> and path names that begin with `NeuralExtractorV3` refer to that audited build and
+> must be regenerated for an OpenFetch public candidate.
+
+
 Public-distribution verdict: HOLD
 Release-gate-status: HOLD
 Qualified-review-status: HOLD
@@ -40,7 +46,7 @@ boundary, CArchive path, native path, and PYZ root. `SOURCE-HASHES.sha256`,
 `licenses/RELEASE-LICENSE-MANIFEST.sha256` bind the local source, Python input,
 and notice sets.
 
-## Neural Extractor license and ownership
+## OpenFetch license and ownership
 
 The project maintainer explicitly confirmed the public attribution, copyright
 period, and MIT licensing intent for project-owned portions. The root
@@ -52,7 +58,7 @@ period, and MIT licensing intent for project-owned portions. The root
 `docs/PROJECT-OWNERSHIP-DECLARATION.md` record the resolved project-owned
 findings. The public identity is the pseudonym `0xRootNull`; the identity
 behind it is intentionally not published. The MIT grant applies only to
-Neural Extractor-owned material and does not relicense third-party material.
+OpenFetch-owned material and does not relicense third-party material.
 Qualified legal review remains unresolved.
 
 ## Main-EXE boundary findings
@@ -127,7 +133,7 @@ unmodified license texts under `licenses/`.
 
 | Component | Version | Recorded license route | Required distribution action |
 |---|---:|---|---|
-| Neural Extractor | 3.0.8 | MIT for project-owned portions; `Copyright (c) 2025-2026 0xRootNull` | Ship `LICENSE`, `PROJECT-METADATA.json`, the ownership declaration, application source, build scripts, locks, and manifests. |
+| OpenFetch | 3.0.8 | MIT for project-owned portions; `Copyright (c) 2025-2026 0xRootNull` | Ship `LICENSE`, `PROJECT-METADATA.json`, the ownership declaration, application source, build scripts, locks, and manifests. |
 | CPython / python-build-standalone | 3.12.9 / 20250317 | Python-2.0 plus historical terms; recipes MPL-2.0 | Ship all selected notices; retain exact CPython and recipe source, patches, toolchain, and transitive source closure. |
 | libffi | 3.4.2 | MIT | Preserve notice/source/provenance and exactly one validated root `libffi-8.dll`. |
 | OpenSSL | 3.0.16 | Apache-2.0 | Preserve license/acknowledgements and retain exact source hash and standalone-build recipe. |
@@ -211,7 +217,7 @@ available through a qualified-review-approved method, as applicable:
   applicable texts under `licenses/`;
 - `docs/DEPENDENCY-SOURCE.md`, `docs/BUILD-REPRODUCIBILITY.md`, and
   `docs/LGPL-COMPLIANCE.md`;
-- complete Neural Extractor source corresponding to the binary, the PyInstaller
+- complete OpenFetch source corresponding to the binary, the PyInstaller
   spec, build/release scripts, dependency locks, exact source/binary hashes, and
   local modifications;
 - complete applicable Qt/PySide/Shiboken source, notices, attribution material,

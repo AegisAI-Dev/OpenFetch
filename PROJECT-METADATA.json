@@ -1,18 +1,20 @@
 {
   "ai_assisted_development": true,
-  "application_version": "3.0.8",
+  "application_version": "3.1.0",
   "company_registration_number": null,
   "copyright_period": "2025-2026",
   "development_started": 2025,
   "employer_client_or_commissioning_party": null,
+  "former_project_name": "Neural Extractor",
   "known_other_human_contributors": [],
   "legal_identity_behind_pseudonym_published": false,
   "mit_licensing_intent": "explicitly confirmed",
-  "project": "Neural Extractor",
+  "project": "OpenFetch",
   "project_license": "MIT for project-owned portions",
   "project_type": "Personal free and open-source software",
   "public_attribution": "0xRootNull",
   "public_author_and_copyright_holder": "0xRootNull",
+  "public_brand": "Brainbyte",
   "public_distribution_verdict": "HOLD",
   "qualified_legal_review_status": "HOLD",
   "registered_company_or_legal_entity": null,
@@ -25,23 +27,23 @@
     },
     {
       "path": "README.md",
-      "sha256": "ae537f48c2acf4969d3f5f7872c42a26c82a7cf4e0fabce305fa0018f8f6f8cd"
+      "sha256": "b611e590296e85e80f9d652eae814ce0adcbe3511e731e0d6ea33841bc27e131"
     },
     {
       "path": "docs/COPYRIGHT-OWNERSHIP-QUESTIONS.md",
-      "sha256": "72308bf295c6b6506fbef13e56d6b40e605482daf9f05161146f6d0e3e71d307"
+      "sha256": "ea114e46f169ab290d6c4d39e66f4ee944622d78e82a2895a9f72b03a04c0331"
     },
     {
       "path": "docs/PROJECT-OWNERSHIP-DECLARATION.md",
-      "sha256": "7ced776c6c19a66f87da8f7ac2cf708bad51f551a8225ab2044113489629b17c"
+      "sha256": "61c3f444716b542c00cbc4e12ab8ecf1d261d4560c2ae32d1a92c42a79ad2e6d"
     },
     {
       "path": "pyproject.toml",
-      "sha256": "9f14ea472b6f8590a4ab1190ac1acacbb27fb60146d63cda36d7845ebdcb3784"
+      "sha256": "f66eb84aa7d3bf6196260c1b1dd3941852a47e22273447d4d312644622f851fc"
     },
     {
       "path": "version_info.txt",
-      "sha256": "4359505f925a39c98f726c3d3eb34683c5b6e002469b890ede556b62b3e3f646"
+      "sha256": "2b0f99332c16c5659f32e1b25eeb75def4ec2a9756e77f8db15aab67d0a7e10b"
     }
   ]
 }

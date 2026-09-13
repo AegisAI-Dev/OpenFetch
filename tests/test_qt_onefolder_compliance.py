@@ -37,14 +37,15 @@ def _pin_fixture_hashes(root: Path, monkeypatch) -> None:
 
 
 def test_spec_uses_external_onefolder_collect_layout():
-    spec = (qt_compliance.PROJECT_ROOT / "NeuralExtractorV3.spec").read_text(
-        encoding="utf-8"
-    )
+    spec = qt_compliance.SPEC_PATH.read_text(encoding="utf-8")
 
+    assert qt_compliance.SPEC_PATH.name == "OpenFetch.spec"
     assert "exclude_binaries=True" in spec
     assert 'contents_directory="."' in spec
     assert "COLLECT(" in spec
-    assert f'name="{qt_compliance.DIST_NAME}"' in spec
+    # The one-folder root name is derived from src/openfetch/config.py.
+    assert 'name=f"{EXECUTABLE_STEM}-{APPLICATION_VERSION}-windows-x64"' in spec
+    assert qt_compliance.DIST_NAME == f"OpenFetch-{qt_compliance.VERSION}-windows-x64"
 
 
 def test_official_source_archives_locks_and_wheel_records_are_verified():

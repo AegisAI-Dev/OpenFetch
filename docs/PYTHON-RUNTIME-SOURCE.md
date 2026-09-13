@@ -1,5 +1,11 @@
 # Python runtime source record
 
+> OpenFetch is the renamed Neural Extractor V3. Version-specific evidence in this
+> document was recorded for the audited Neural Extractor V3.0.8 candidate; artifact
+> and path names that begin with `NeuralExtractorV3` refer to that audited build and
+> must be regenerated for an OpenFetch public candidate.
+
+
 Release-gate-status: **HOLD**
 
 Exact-byte-provenance-status: **MATCH**
@@ -81,18 +87,18 @@ texts and source headers. All 21 PBS license/notice files are preserved under
 
 ## Modifications
 
-No Neural Extractor modification to CPython, PBS, or the named native dependency
+No OpenFetch modification to CPython, PBS, or the named native dependency
 sources is declared. The distribution repackages selected upstream runtime
 files through PyInstaller. The exact upstream PBS patches and transformations
 are retained in `python-build-standalone-recipes/`; they remain upstream
-modifications and must not be described as Neural Extractor-authored changes.
+modifications and must not be described as OpenFetch-authored changes.
 
 ## Distribution action
 
 For a candidate distribution, keep the runtime source manifest, exact upstream
 license texts, native component inventory, PBS recipes/patches, and actual
 source archives together with the build/source package. Do not replace a
-third-party term with the Neural Extractor license. Microsoft runtime rights are
+third-party term with the OpenFetch license. Microsoft runtime rights are
 separate and remain HOLD under `docs/MICROSOFT-RUNTIME-REDISTRIBUTION.md`.
 
 Public distribution remains HOLD until the clean-rebuild gaps in

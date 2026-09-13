@@ -278,6 +278,13 @@ def _verify_uv_lock(path: Path) -> list[str]:
             continue
         name_value = package.get("name")
         version_value = package.get("version")
+        source_record = package.get("source", {})
+        if isinstance(source_record, dict) and "editable" in source_record:
+            # The project's own editable entry has a dynamic version derived from
+            # openfetch.config.VERSION, so uv records no version for it.
+            if not isinstance(name_value, str):
+                errors.append("uv.lock project record is missing a name")
+            continue
         if not isinstance(name_value, str) or not isinstance(version_value, str):
             errors.append("uv.lock package is missing a name or version")
             continue
@@ -503,7 +510,7 @@ def verify_project(project_root: Path) -> list[str]:
         _verify_requirements_file(project_root / "requirements.lock", require_hashes=True)
     )
     errors.extend(_verify_uv_lock(project_root / "uv.lock"))
-    errors.extend(_verify_spec(project_root / "NeuralExtractorV3.spec"))
+    errors.extend(_verify_spec(project_root / "OpenFetch.spec"))
     errors.extend(_verify_source_hashes(project_root))
 
     for relative_path in REQUIRED_COMPLIANCE_FILES:

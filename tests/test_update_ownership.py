@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from neural_extractor_v3.core import update_ownership as ownership_module
-from neural_extractor_v3.core.update_ownership import (
+from openfetch.core import update_ownership as ownership_module
+from openfetch.core.update_ownership import (
     OWNERSHIP_SCHEMA_VERSION,
     OwnershipRecord,
     OwnershipRole,
@@ -19,7 +19,7 @@ from neural_extractor_v3.core.update_ownership import (
     new_transaction_id,
     normalized_target_identity,
 )
-from neural_extractor_v3.core.updater import UpdateError
+from openfetch.core.updater import UpdateError
 
 TRANSACTION_A = "A" * 48
 TRANSACTION_B = "B" * 48
@@ -83,7 +83,7 @@ def manager(
 
 @pytest.fixture
 def target_a(tmp_path: Path) -> Path:
-    target = tmp_path / "install-a" / "NeuralExtractorV3.exe"
+    target = tmp_path / "install-a" / "OpenFetch.exe"
     target.parent.mkdir()
     target.write_bytes(b"installed-a")
     return target
@@ -91,7 +91,7 @@ def target_a(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def target_b(tmp_path: Path) -> Path:
-    target = tmp_path / "install-b" / "NeuralExtractorV3.exe"
+    target = tmp_path / "install-b" / "OpenFetch.exe"
     target.parent.mkdir()
     target.write_bytes(b"installed-b")
     return target
@@ -161,7 +161,7 @@ def test_new_transaction_ids_are_random_and_valid() -> None:
             "schema_version": OWNERSHIP_SCHEMA_VERSION,
             "transaction_id": first,
             "target_identity": "a" * 64,
-            "target_name": "NeuralExtractorV3.exe",
+            "target_name": "OpenFetch.exe",
             "owner_pid": 1,
             "owner_process_created": "b" * 64,
             "role": OwnershipRole.HANDOFF.value,
@@ -529,7 +529,7 @@ def test_persisted_ownership_record_contains_only_sanitized_fields(
     manager: UpdateOwnershipManager,
     tmp_path: Path,
 ) -> None:
-    target = tmp_path / "do-not-persist-this-directory" / "NeuralExtractorV3.exe"
+    target = tmp_path / "do-not-persist-this-directory" / "OpenFetch.exe"
     target.parent.mkdir()
     target.write_bytes(b"installed")
     reserve(manager, target)

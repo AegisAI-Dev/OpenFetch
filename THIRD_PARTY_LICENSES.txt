@@ -1,4 +1,4 @@
-NEURAL EXTRACTOR V3 - DETERMINISTIC DISTRIBUTION INVENTORY
+OPENFETCH - DETERMINISTIC DISTRIBUTION INVENTORY
 ==============================================================
 
 Status: HOLD - NOT APPROVED FOR PUBLIC DISTRIBUTION
@@ -6,7 +6,7 @@ Public-distribution verdict: HOLD
 Release-gate-status: HOLD
 Qualified-review-status: HOLD
 Audit-blocker-count: 6
-Report schema: Neural Extractor distribution inventory v1
+Report schema: OpenFetch distribution inventory v1
 
 This is an artifact-derived engineering record, not legal advice or a claim of
 license compliance. UNRESOLVED means qualified legal or provenance review is still
@@ -16,19 +16,19 @@ hash covers the bootloader, compressed archive, and all other executable bytes.
 Artifact identity
 -----------------
 
-Artifact file: NeuralExtractorV3.exe
+Artifact file: OpenFetch.exe
 Artifact size: OMITTED FROM EMBEDDED REPORT (see post-build sidecar/final audit)
 Artifact SHA-256: OMITTED FROM EMBEDDED REPORT (self-reference avoidance)
-Audited non-compliance payload fingerprint SHA-256: 69d425a20c5c52a1ec725cffdb6e26869cacb2a661652f3f09bbb76199b8677d
-CArchive entries: 336
-Embedded PYZ entries: 1535
+Audited non-compliance payload fingerprint SHA-256: 3fe6326498402ea03fb8bdc787ba5fdb7b21adff9fcde20ba74787195ac9567d
+CArchive entries: 486
+Embedded PYZ entries: 1537
 
 Component, license, source, and distribution-action inventory
 -------------------------------------------------------------
 
 | Component | Version | License | Copyright holder | Distribution location/evidence | Upstream/source/hash provenance | Modifications | Required notice/source/relink action | Boundary |
 |---|---|---|---|---|---|---|---|---|
-| Neural Extractor V3 | 3.0.8 | MIT for project-owned portions | 0xRootNull; Copyright (c) 2025-2026 | Frozen application modules in the embedded PYZ plus entry-point script | Project corresponding source; embedded SOURCE-HASHES.sha256 records inputs | Project-maintainer declaration records no known other human contributor claim; AI-assisted development used under maintainer direction and approval | Ship the standard MIT LICENSE, PROJECT-METADATA.json, ownership declaration, and corresponding build/source inputs. Third-party terms remain separate. | MAIN EXE |
+| OpenFetch | 3.1.0 | MIT for project-owned portions | 0xRootNull; Copyright (c) 2025-2026 | Frozen application modules in the embedded PYZ plus entry-point script | Project corresponding source; embedded SOURCE-HASHES.sha256 records inputs | Project-maintainer declaration records no known other human contributor claim; AI-assisted development used under maintainer direction and approval | Ship the standard MIT LICENSE, PROJECT-METADATA.json, ownership declaration, and corresponding build/source inputs. Third-party terms remain separate. | MAIN EXE |
 | CPython / python-build-standalone | CPython 3.12.9; python-build-standalone 20250317 | Python-2.0 plus historical and bundled-component terms; build recipes MPL-2.0 | Python Software Foundation and historical licensors; standalone-build and bundled-component per-file holders (exact closure in notices) | python312.dll, python3.dll, stdlib/PYZ modules, and CPython extension modules | https://www.python.org/ftp/python/3.12.9/Python-3.12.9.tar.xz (SHA-256 7220835d9f90b37c006e9842a8dff4580aaca4318674f947302b8d28f3f81112); https://github.com/astral-sh/python-build-standalone/releases/tag/20250317 install-only asset SHA-256 ee338839315bdd8af5fc935f9595eca20ebebdd250726c5816b2d0cf94d1e661 | Upstream standalone build/patch set; no project source patch declared; exact upstream build transformation must accompany source provenance | Ship CPython, standalone-build, and all selected bundled-component notices; retain exact source, patches, recipes, toolchain, and reconstruction steps. | MAIN EXE |
 | libffi | 3.4.2 | MIT | Anthony Green, Red Hat, and libffi contributors (exact per-file holders in license) | libffi-8.dll | python/cpython-source-deps commit 16fad4855b3d8c03b5910e405ff3a04395b39a98; exact binary hash is in the boundary section | Built by the audited CPython standalone runtime; no project source patch declared | Ship the exact copyright/license text and notices; retain the exact upstream source/archive and build provenance named in the source companion. Keep exactly one audited root DLL; do not shadow it. | MAIN EXE |
 | OpenSSL | 3.0.16 | Apache-2.0 | The OpenSSL Project Authors and individual contributors | libcrypto-3-x64.dll, libssl-3-x64.dll, _hashlib.pyd and _ssl.pyd | https://www.openssl.org/source/openssl-3.0.16.tar.gz; exact source-archive hash is not yet recorded (HOLD) | Built into the pinned python-build-standalone runtime; no project patch declared | Ship Apache-2.0 and source-exact acknowledgements/copyright material; retain the exact source archive hash and standalone-build recipe before release. | MAIN EXE |
@@ -332,11 +332,11 @@ all exact compliance sizes and SHA-256 values.
 | Path | Present | Size | SHA-256 |
 |---|---|---|---|
 | LICENSE | YES | FINAL-BUILD-DEPENDENT | SEE POST-BUILD SIDECAR |
-| PROJECT-METADATA.json | NO | MISSING | MISSING |
+| PROJECT-METADATA.json | YES | FINAL-BUILD-DEPENDENT | SEE POST-BUILD SIDECAR |
 | THIRD_PARTY_LICENSES.txt | YES | SELF-REFERENTIAL | SEE POST-BUILD SIDECAR |
 | THIRD_PARTY_NOTICES.md | YES | FINAL-BUILD-DEPENDENT | SEE POST-BUILD SIDECAR |
-| docs/COPYRIGHT-OWNERSHIP-QUESTIONS.md | NO | MISSING | MISSING |
-| docs/PROJECT-OWNERSHIP-DECLARATION.md | NO | MISSING | MISSING |
+| docs/COPYRIGHT-OWNERSHIP-QUESTIONS.md | YES | FINAL-BUILD-DEPENDENT | SEE POST-BUILD SIDECAR |
+| docs/PROJECT-OWNERSHIP-DECLARATION.md | YES | FINAL-BUILD-DEPENDENT | SEE POST-BUILD SIDECAR |
 | docs/DEPENDENCY-SOURCE.md | YES | FINAL-BUILD-DEPENDENT | SEE POST-BUILD SIDECAR |
 | docs/BUILD-REPRODUCIBILITY.md | YES | FINAL-BUILD-DEPENDENT | SEE POST-BUILD SIDECAR |
 | docs/LGPL-COMPLIANCE.md | YES | FINAL-BUILD-DEPENDENT | SEE POST-BUILD SIDECAR |
@@ -350,7 +350,7 @@ CArchive entry-type counts
 
 | PyInstaller type code | Count |
 |---|---|
-| b | 323 |
+| b | 473 |
 | m | 5 |
 | s | 7 |
 | z | 1 |
@@ -420,10 +420,10 @@ Embedded PYZ top-level module roots
 | mimetypes | 1 |
 | multiprocessing | 23 |
 | netrc | 1 |
-| neural_extractor_v3 | 28 |
 | nturl2path | 1 |
 | numbers | 1 |
 | opcode | 1 |
+| openfetch | 30 |
 | optparse | 1 |
 | packaging | 14 |
 | pathlib | 1 |

@@ -17,8 +17,21 @@ from collections.abc import Iterator
 from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO
 
-VERSION = "3.0.8"
-SOURCE_BUNDLE_NAME = f"NeuralExtractorV3-{VERSION}-corresponding-source.zip"
+try:
+    from scripts.project_identity import (
+        APPLICATION_VERSION,
+        EXECUTABLE_STEM,
+        ONEFOLDER_SPEC_NAME,
+    )
+except ModuleNotFoundError:  # executed directly as scripts/generate_source_bundle.py
+    from project_identity import (  # type: ignore[no-redef]
+        APPLICATION_VERSION,
+        EXECUTABLE_STEM,
+        ONEFOLDER_SPEC_NAME,
+    )
+
+VERSION = APPLICATION_VERSION
+SOURCE_BUNDLE_NAME = f"{EXECUTABLE_STEM}-{VERSION}-corresponding-source.zip"
 FIXED_ZIP_DATE = (1980, 1, 1, 0, 0, 0)
 INCLUDE_ROOTS = (
     ".github/workflows",
@@ -40,8 +53,8 @@ INCLUDE_FILES = (
     "QT-PYSIDE-COMPONENTS.json",
     "LICENSE",
     "main.py",
-    "NeuralExtractorV3-bridge-onefile.spec",
-    "NeuralExtractorV3.spec",
+    "OpenFetch-onefile.spec",
+    "OpenFetch.spec",
     "PROJECT-METADATA.json",
     "pyproject.toml",
     "README.md",
@@ -114,6 +127,7 @@ def is_forbidden_path(relative: Path) -> bool:
     name = relative.name.casefold()
     return bool(
         parts & FORBIDDEN_PARTS
+        or any(part.endswith(".egg-info") for part in parts)
         or name in FORBIDDEN_NAMES
         or relative.suffix.casefold() in FORBIDDEN_SUFFIXES
     )
@@ -458,7 +472,11 @@ def generate_build_inputs_lock(project_root: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    # newline="\n" keeps the generated manifests byte-identical on Windows and
+    # POSIX; the repository's canonical representation is LF (see .gitattributes).
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 def source_hash_manifest(candidates: list[tuple[Path, Path]]) -> dict[str, Any]:
@@ -564,7 +582,7 @@ def archive_manifest(archive: Path) -> dict[str, Any]:
     ]
     required_files = {
         ".github/workflows/build-release.yml",
-        "NeuralExtractorV3.spec",
+        ONEFOLDER_SPEC_NAME,
         "requirements.lock",
         "uv.lock",
         "BUILD-INPUTS.lock",

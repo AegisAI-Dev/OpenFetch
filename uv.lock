@@ -369,8 +369,7 @@ wheels = [
 ]
 
 [[package]]
-name = "neural-extractor-v3"
-version = "3.0.8"
+name = "openfetch"
 source = { editable = "." }
 dependencies = [
     { name = "pillow" },

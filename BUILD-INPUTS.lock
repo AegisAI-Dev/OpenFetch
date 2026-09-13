@@ -1,5 +1,5 @@
 {
-  "application_version": "3.0.8",
+  "application_version": "3.1.0",
   "build_label": "pyside-provider-free-compliance-candidate",
   "distributed_binary_references": [
     {
@@ -23,8 +23,8 @@
       "kind": "offline-build-input",
       "path": "build_inputs/PREPARATION-MANIFEST.json",
       "pin_provenance": "build_inputs/PREPARATION-MANIFEST.json",
-      "sha256": "3e96af74a107788a4294ad2aae745367ca8659ccd89f1b5cab02c35c705d309c",
-      "size": 35748
+      "sha256": "80ea92d4683850adb39251a0048e7a437e4f12c10ef1c273eac627f43330816e",
+      "size": 35027
     },
     {
       "component": "python-build-standalone-runtime",
@@ -4165,7 +4165,7 @@
     }
   ],
   "offline_after_preparation": true,
-  "preparation_manifest_sha256": "3e96af74a107788a4294ad2aae745367ca8659ccd89f1b5cab02c35c705d309c",
+  "preparation_manifest_sha256": "80ea92d4683850adb39251a0048e7a437e4f12c10ef1c273eac627f43330816e",
   "prohibited_artifact_sha256": "0d4d4bdf1eabf5af88c1094732ae28cf55f12a0dc36377d90088eb54537b82ac",
   "public_distribution_verdict": "HOLD",
   "schema_version": 1

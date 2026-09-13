@@ -23,9 +23,9 @@ import pytest
 from scripts import packaged_runtime_smoke as harness
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BRIDGE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-bridge-release.yml"
+BRIDGE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-onefile-release.yml"
 PRODUCTION_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-release.yml"
-APP_SOURCE = (PROJECT_ROOT / "src" / "neural_extractor_v3" / "app.py").read_text(
+APP_SOURCE = (PROJECT_ROOT / "src" / "openfetch" / "app.py").read_text(
     encoding="utf-8"
 )
 
@@ -258,7 +258,7 @@ def test_app_runtime_smoke_writes_phase_trace_and_runtime_details(tmp_path, monk
     """The in-app smoke (unpackaged) must emit the trace and per-runtime data."""
     import tempfile as tempfile_module
 
-    from neural_extractor_v3 import app as app_module
+    from openfetch import app as app_module
 
     monkeypatch.setattr(tempfile_module, "gettempdir", lambda: str(tmp_path))
     result = tmp_path / "runtime.json"
@@ -312,7 +312,7 @@ def test_app_runtime_smoke_writes_phase_trace_and_runtime_details(tmp_path, monk
 
 
 def test_app_smoke_trace_stays_inside_the_temporary_directory():
-    from neural_extractor_v3 import app as app_module
+    from openfetch import app as app_module
 
     with pytest.raises(ValueError):
         app_module._internal_smoke_trace_path(r"D:\definitely\not\temp\r.json")
@@ -383,7 +383,7 @@ def test_no_skip_workaround_added_for_the_runtime_smoke():
     runtime_skip = re.compile(r"^\s*pytest\.skip\(", re.MULTILINE)
     for name in (
         "test_packaged_runtime_smoke.py",
-        "test_bridge_release.py",
+        "test_onefile_release.py",
         "test_packaging_contract.py",
     ):
         text = (PROJECT_ROOT / "tests" / name).read_text(encoding="utf-8")
@@ -391,14 +391,14 @@ def test_no_skip_workaround_added_for_the_runtime_smoke():
         assert not runtime_skip.search(text), f"{name} gained a runtime pytest.skip"
 
 
-def test_bridge_still_publishes_exactly_four_stable_assets(bridge_workflow: str):
-    publish = bridge_workflow.split("Publish the stable bridge release", 1)[1]
+def test_release_publishes_exactly_the_openfetch_asset_family(bridge_workflow: str):
+    publish = bridge_workflow.split("Publish the stable OpenFetch release", 1)[1]
     assets = re.findall(r"^            dist/(.+)$", publish, flags=re.MULTILINE)
     assert assets == [
-        "NeuralExtractorV3.exe",
-        "NeuralExtractorV3-3.0.8-windows-x64.exe",
-        "NeuralExtractorV3-3.0.8-windows-x64.exe.sha256",
-        "NeuralExtractorV3-3.0.8-manifest.json",
+        "OpenFetch.exe",
+        "OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe",
+        "OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe.sha256",
+        "OpenFetch-${{ env.RELEASE_VERSION }}-manifest.json",
     ]
     assert "draft: false" in publish
     assert "prerelease: false" in publish
@@ -417,7 +417,7 @@ def test_production_workflow_remains_fail_closed():
 
 def test_internal_smoke_wrapper_reports_errors_instead_of_hanging(capsys):
     """A windowed EXE must never raise into PyInstaller's modal traceback dialog."""
-    from neural_extractor_v3 import app as app_module
+    from openfetch import app as app_module
 
     def explode() -> int:
         raise ValueError("Internal smoke result must be written below the temporary directory.")
@@ -431,7 +431,7 @@ def test_internal_smoke_wrapper_reports_errors_instead_of_hanging(capsys):
 
 
 def test_internal_smoke_wrapper_passes_through_success():
-    from neural_extractor_v3 import app as app_module
+    from openfetch import app as app_module
 
     assert app_module._run_internal_smoke("runtime", lambda: 0) == 0
     assert app_module._run_internal_smoke("runtime", lambda: 1) == 1

@@ -9,8 +9,8 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from neural_extractor_v3.core import update_directory_installer as directory_module
-from neural_extractor_v3.core.update_directory_installer import (
+from openfetch.core import update_directory_installer as directory_module
+from openfetch.core.update_directory_installer import (
     BACKUP_INVENTORY_FILENAME,
     DIRECTORY_MANIFEST_FILENAME,
     DIRECTORY_TRANSACTION_FILENAME,
@@ -28,19 +28,19 @@ from neural_extractor_v3.core.update_directory_installer import (
     recover_stale_directory_updates,
     write_directory_startup_confirmation,
 )
-from neural_extractor_v3.core.update_installer import (
+from openfetch.core.update_installer import (
     RESULT_FILENAME,
     STARTUP_MARKER_FILENAME,
     _atomic_write_json,
     _read_json,
 )
-from neural_extractor_v3.core.update_ownership import (
+from openfetch.core.update_ownership import (
     OwnershipRole,
     TransactionState,
     UpdateOwnershipManager,
     normalized_target_identity,
 )
-from neural_extractor_v3.core.updater import UpdateError
+from openfetch.core.updater import UpdateError
 
 OLD_VERSION = "3.0.4"
 NEW_VERSION = "3.0.5"
@@ -452,7 +452,7 @@ def test_directory_manifest_rejects_unsafe_and_prohibited_paths(tmp_path):
     for prohibited in (
         "PyQt5/QtCore.dll",
         "yt_dlp_plugins/provider.py",
-        f"NeuralExtractorV3-{NEW_VERSION}-windows-x64.exe",
+        f"OpenFetch-{NEW_VERSION}-windows-x64.exe",
         "tools/other-tool.exe",
         "sip.pyd",
     ):

@@ -1,5 +1,11 @@
 # Qt/PySide6 compatible replacement and rollback guide
 
+> OpenFetch is the renamed Neural Extractor V3. Version-specific evidence in this
+> document was recorded for the audited Neural Extractor V3.0.8 candidate; artifact
+> and path names that begin with `NeuralExtractorV3` refer to that audited build and
+> must be regenerated for an OpenFetch public candidate.
+
+
 Release-gate-status: HOLD
 
 This guide documents a practical engineering replacement route for the Windows
@@ -8,7 +14,7 @@ particular replacement is license- or ABI-compatible.
 
 ## Supported candidate
 
-- Neural Extractor: 3.0.8
+- OpenFetch: 3.0.8
 - layout: PyInstaller one-folder with `contents_directory="."`
 - architecture: Windows x64
 - PySide6/PySide6-Essentials: 6.11.1
@@ -44,7 +50,7 @@ An arbitrary same-named DLL is not an approved replacement.
 
 ## Safe recipient replacement
 
-Close every Neural Extractor process first. Work on a copy of the entire
+Close every OpenFetch process first. Work on a copy of the entire
 distribution directory, not the only installed copy.
 
 1. Verify the original layout:
@@ -121,7 +127,7 @@ For an independent source-built exercise:
    that exact Qt prefix and Python interpreter;
 6. collect QtCore, QtGui, QtWidgets and only the documented plugins into a copy
    of the candidate layout;
-7. rebuild Neural Extractor with `NeuralExtractorV3.spec`, or replace the
+7. rebuild OpenFetch with `NeuralExtractorV3.spec`, or replace the
    external compatible files directly;
 8. run the replacement smoke, Windows GUI smoke, libffi runtime smoke, and full
    test suite; and
@@ -143,7 +149,7 @@ automatic updater may overwrite such files without clear consent.
 ## Reverse engineering for debugging
 
 The application candidate adds no technical restriction against inspecting or
-debugging the interaction between Neural Extractor and a recipient-modified
+debugging the interaction between OpenFetch and a recipient-modified
 LGPL component. The final EULA, installer, signing policy, and support terms
 must be reviewed to ensure they do not contradict any rights required by the
 selected license route.

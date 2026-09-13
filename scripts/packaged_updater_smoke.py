@@ -1,7 +1,7 @@
-"""Run controlled Windows smokes against two packaged Neural Extractor EXEs.
+"""Run controlled Windows smokes against two packaged OpenFetch EXEs.
 
 The script works only inside a unique caller-provided workspace. It never uses
-or replaces an installed Neural Extractor executable.
+or replaces an installed OpenFetch executable.
 """
 
 from __future__ import annotations
@@ -21,9 +21,9 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from neural_extractor_v3.config import APP_NAME, VERSION
-from neural_extractor_v3.core.process_control import process_creation_identity
-from neural_extractor_v3.core.update_installer import (
+from openfetch.config import APP_NAME, GITHUB_REPO, VERSION
+from openfetch.core.process_control import process_creation_identity
+from openfetch.core.update_installer import (
     RESULT_FILENAME,
     STARTUP_MARKER_FILENAME,
     TRANSACTION_FILENAME,
@@ -31,12 +31,13 @@ from neural_extractor_v3.core.update_installer import (
     UpdateTransaction,
     prepare_and_launch_update,
 )
-from neural_extractor_v3.core.update_manifest import (
+from openfetch.core.update_manifest import (
     UpdateManifest,
     expected_exe_filename,
+    expected_manifest_filename,
     sha256_file,
 )
-from neural_extractor_v3.core.update_ownership import (
+from openfetch.core.update_ownership import (
     OWNERSHIP_SCHEMA_VERSION,
     OwnershipRecord,
     OwnershipRole,
@@ -45,7 +46,7 @@ from neural_extractor_v3.core.update_ownership import (
     new_transaction_id,
     normalized_target_identity,
 )
-from neural_extractor_v3.core.updater import UpdateInfo
+from openfetch.core.updater import UpdateInfo
 
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
@@ -82,7 +83,10 @@ MAX_WINDOWS_COMMAND_LINE = 32767
 SHORT_ROOT_LEAF = "neu"
 # Preflight models the worst case, so use the longest scenario directory name.
 LONGEST_SCENARIO_NAME = "concurrency"
-APP_DIRECTORY_NAME = "NeuralExtractorV3"
+APP_DIRECTORY_NAME = "OpenFetch"
+# The CI failure behind the short-root design was measured with the longer
+# pre-rename application directory name.
+LEGACY_APP_DIRECTORY_NAME = "NeuralExtractorV3"
 DRIVE_FIXED = 3
 
 
@@ -170,7 +174,9 @@ def select_short_external_root(
     )
 
 
-def modelled_smoke_paths(workspace: Path) -> dict[str, Path]:
+def modelled_smoke_paths(workspace: Path,
+    app_directory_name: str = APP_DIRECTORY_NAME,
+) -> dict[str, Path]:
     """Model the deepest paths the smoke generates, worst case, without I/O.
 
     Mirrors ``_scenario`` and ``prepare_and_launch_update`` so preflight can
@@ -180,9 +186,9 @@ def modelled_smoke_paths(workspace: Path) -> dict[str, Path]:
     transaction_id = new_transaction_id()
     scenario_root = workspace / LONGEST_SCENARIO_NAME
     local_app_data = scenario_root / "local-app-data"
-    updates_root = local_app_data / APP_DIRECTORY_NAME / "updates"
-    helper_root = local_app_data / APP_DIRECTORY_NAME / "updater-helper"
-    target = scenario_root / "install" / "NeuralExtractorV3.exe"
+    updates_root = local_app_data / app_directory_name / "updates"
+    helper_root = local_app_data / app_directory_name / "updater-helper"
+    target = scenario_root / "install" / "OpenFetch.exe"
     transaction_dir = updates_root / VERSION / transaction_id
     return {
         "detached_helper_executable": (
@@ -305,9 +311,10 @@ def _environment(
     environment = os.environ.copy()
     environment["LOCALAPPDATA"] = str(scenario.local_app_data)
     environment["QT_QPA_PLATFORM"] = "offscreen"
+    environment.pop("OPENFETCH_UPDATER_STARTUP_TIMEOUT_SECONDS", None)
     environment.pop("NEURAL_EXTRACTOR_UPDATER_STARTUP_TIMEOUT_SECONDS", None)
     if startup_timeout_seconds is not None:
-        environment["NEURAL_EXTRACTOR_UPDATER_STARTUP_TIMEOUT_SECONDS"] = str(
+        environment["OPENFETCH_UPDATER_STARTUP_TIMEOUT_SECONDS"] = str(
             startup_timeout_seconds
         )
     return environment
@@ -316,9 +323,9 @@ def _environment(
 def _scenario(base: Path, name: str, target_package: Path, staged_package: Path) -> Scenario:
     root = (base / name).resolve()
     local_app_data = root / "local-app-data"
-    updates_root = local_app_data / "NeuralExtractorV3" / "updates"
-    helper_root = local_app_data / "NeuralExtractorV3" / "updater-helper"
-    target = root / "install" / "NeuralExtractorV3.exe"
+    updates_root = local_app_data / "OpenFetch" / "updates"
+    helper_root = local_app_data / "OpenFetch" / "updater-helper"
+    target = root / "install" / "OpenFetch.exe"
     transaction_id = new_transaction_id()
     staged = (
         updates_root
@@ -357,14 +364,14 @@ def _update_info(staged: Path) -> UpdateInfo:
         channel="stable",
         minimum_updater_version=VERSION,
     )
-    base_url = f"https://github.com/AegisAI-Dev/NeuralExtractor/releases/download/v{VERSION}"
+    base_url = f"https://github.com/{GITHUB_REPO}/releases/download/v{VERSION}"
     return UpdateInfo(
         version=VERSION,
         tag_name=f"v{VERSION}",
-        name=f"Neural Extractor V3 v{VERSION}",
-        html_url=f"https://github.com/AegisAI-Dev/NeuralExtractor/releases/tag/v{VERSION}",
+        name=f"{APP_NAME} v{VERSION}",
+        html_url=f"https://github.com/{GITHUB_REPO}/releases/tag/v{VERSION}",
         download_url=f"{base_url}/{manifest.asset_filename}",
-        manifest_url=f"{base_url}/NeuralExtractorV3-{VERSION}-manifest.json",
+        manifest_url=f"{base_url}/{expected_manifest_filename(VERSION)}",
         checksum_url="",
         published_at="",
         body="packaged updater smoke",
@@ -671,7 +678,7 @@ def _run_prepared_update(
             scenario.helper_root
             / normalized_target_identity(scenario.target)
             / prepared.transaction_id
-            / "NeuralExtractorV3-Updater.exe"
+            / UPDATE_HELPER_FILENAME
         )
         ownership = UpdateOwnershipManager(scenario.updates_root).read(scenario.target)
         _require(ownership is not None, "Packaged helper did not claim ownership")
@@ -762,7 +769,7 @@ def _build_nonconfirming_stage(scenario: Scenario) -> None:
             "--clean",
             "--noconfirm",
             "--name",
-            "NeuralExtractorV3-NonConfirming",
+            "OpenFetch-NonConfirming",
             "--distpath",
             str(dist),
             "--workpath",
@@ -781,7 +788,7 @@ def _build_nonconfirming_stage(scenario: Scenario) -> None:
     if process.returncode != 0:
         detail = (process.stderr or process.stdout or "")[-1000:]
         raise SmokeError(f"Controlled nonconfirming package build failed: {detail}")
-    built = dist / "NeuralExtractorV3-NonConfirming.exe"
+    built = dist / "OpenFetch-NonConfirming.exe"
     _require(built.is_file(), "Controlled nonconfirming package was not produced")
     shutil.copy2(built, scenario.staged)
 
@@ -884,7 +891,7 @@ def _concurrency_smoke(
     environment = _environment(scenario)
     competitor = _start_parent(environment)
     other_parent = _start_parent(environment)
-    helper = scenario.root / "helper" / "NeuralExtractorV3-Updater.exe"
+    helper = scenario.root / "helper" / UPDATE_HELPER_FILENAME
     helper.parent.mkdir(parents=True)
     shutil.copy2(new_package, helper)
     process: subprocess.Popen[bytes] | None = None

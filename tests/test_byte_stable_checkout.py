@@ -28,7 +28,7 @@ from scripts import restore_build_inputs as restore
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GITATTRIBUTES = PROJECT_ROOT / ".gitattributes"
-BRIDGE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-bridge-release.yml"
+BRIDGE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-onefile-release.yml"
 PRODUCTION_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-release.yml"
 SOURCE_HASHES = PROJECT_ROOT / "SOURCE-HASHES.sha256"
 LICENSE_MANIFEST = PROJECT_ROOT / "licenses" / "RELEASE-LICENSE-MANIFEST.sha256"
@@ -327,7 +327,7 @@ def test_packaging_contract_verifiers_are_not_weakened():
 
 
 def test_build_inputs_are_never_published_as_release_assets(bridge_workflow: str):
-    publish_block = bridge_workflow.split("Publish the stable bridge release", 1)[1]
+    publish_block = bridge_workflow.split("Publish the stable OpenFetch release", 1)[1]
     assert "build_inputs" not in publish_block
     artifact_block = bridge_workflow.split("Upload workflow artifact", 1)[1].split(
         "- name:", 1
@@ -336,15 +336,16 @@ def test_build_inputs_are_never_published_as_release_assets(bridge_workflow: str
     assert "build_inputs/*" in (PROJECT_ROOT / ".gitignore").read_text(encoding="utf-8")
 
 
-def test_bridge_still_publishes_exactly_four_stable_updater_assets(bridge_workflow: str):
-    publish_block = bridge_workflow.split("Publish the stable bridge release", 1)[1]
+def test_release_publishes_only_the_openfetch_asset_family(bridge_workflow: str):
+    """Legacy-named assets belong in the bridge repository, not in this one."""
+    publish_block = bridge_workflow.split("Publish the stable OpenFetch release", 1)[1]
     for asset in (
-        "dist/NeuralExtractorV3.exe",
-        "dist/NeuralExtractorV3-3.0.8-windows-x64.exe",
-        "dist/NeuralExtractorV3-3.0.8-windows-x64.exe.sha256",
-        "dist/NeuralExtractorV3-3.0.8-manifest.json",
+        "dist/OpenFetch.exe",
+        "dist/OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe",
+        "dist/OpenFetch-${{ env.RELEASE_VERSION }}-manifest.json",
     ):
         assert asset in publish_block
+    assert "dist/NeuralExtractorV3-" not in publish_block
     assert len(re.findall(r"^            dist/", publish_block, flags=re.MULTILINE)) == 4
     assert "draft: false" in publish_block
     assert "prerelease: false" in publish_block
@@ -362,6 +363,7 @@ def test_production_workflow_remains_unchanged_and_fail_closed():
     # The bridge fix must not leak into the compliance-gated workflow.
     assert "restore_build_inputs" not in production
     assert "PUBLISH-FAMILY-BRIDGE" not in production
+    assert "PUBLISH-OPENFETCH" not in production
     assert "core.autocrlf" not in production
 
 
@@ -595,3 +597,9 @@ def test_repository_build_inputs_satisfy_every_covered_target():
     assert len(targets) >= 74
     restore.verify_targets(PROJECT_ROOT, targets)
     restore.assert_no_runtime_state(PROJECT_ROOT)
+
+
+def test_generated_packaging_metadata_is_never_recorded_as_source():
+    """src/<name>.egg-info is build output that uv/setuptools rewrite with CRLF."""
+    offenders = [relative for relative in _source_hash_records() if ".egg-info/" in relative]
+    assert offenders == [], f"packaging metadata leaked into the source manifest: {offenders}"

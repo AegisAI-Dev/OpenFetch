@@ -1,7 +1,7 @@
 """Exercise the one-folder directory updater against a real packaged build.
 
 The smoke runs entirely inside a caller-provided workspace with a redirected
-``LOCALAPPDATA``.  It never touches an installed Neural Extractor.  Two
+``LOCALAPPDATA``.  It never touches an installed OpenFetch.  Two
 scenarios run against the real packaged EXE:
 
 1. ``success``: a full directory update with backup, swap, real detached
@@ -31,9 +31,9 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-from neural_extractor_v3.config import VERSION
-from neural_extractor_v3.core.process_control import process_creation_identity
-from neural_extractor_v3.core.update_directory_installer import (
+from openfetch.config import VERSION
+from openfetch.core.process_control import process_creation_identity
+from openfetch.core.update_directory_installer import (
     DIRECTORY_TRANSACTION_FILENAME,
     ONEFOLDER_EXECUTABLE_NAME,
     DirectoryUpdateManifest,
@@ -41,9 +41,9 @@ from neural_extractor_v3.core.update_directory_installer import (
     load_directory_update_transaction,
     prepare_and_launch_directory_update,
 )
-from neural_extractor_v3.core.update_installer import RESULT_FILENAME
-from neural_extractor_v3.core.update_ownership import new_transaction_id
-from neural_extractor_v3.core.updater import UpdateError
+from openfetch.core.update_installer import RESULT_FILENAME
+from openfetch.core.update_ownership import new_transaction_id
+from openfetch.core.updater import UpdateError
 
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 PREVIOUS_VERSION = "3.0.7"
@@ -77,7 +77,7 @@ def _copy_tree(source: Path, destination: Path) -> None:
 
 
 def _tree_hashes(root: Path) -> dict[str, str]:
-    from neural_extractor_v3.core.update_directory_installer import (
+    from openfetch.core.update_directory_installer import (
         _hash_file,
         _walk_regular_files,
     )
@@ -124,7 +124,7 @@ def _run_scenario(
     fake_temp = scenario_root / "not-the-system-temp"
     appdata.mkdir(parents=True)
     fake_temp.mkdir(parents=True)
-    updates_root = appdata / "NeuralExtractorV3" / "updates"
+    updates_root = appdata / "OpenFetch" / "updates"
     updates_root.mkdir(parents=True)
 
     _copy_tree(distribution, install)
@@ -151,7 +151,7 @@ def _run_scenario(
         {
             "LOCALAPPDATA": str(appdata),
             "QT_QPA_PLATFORM": startup_platform,
-            "NEURAL_EXTRACTOR_UPDATER_STARTUP_TIMEOUT_SECONDS": str(startup_timeout),
+            "OPENFETCH_UPDATER_STARTUP_TIMEOUT_SECONDS": str(startup_timeout),
         }
     )
 
@@ -287,7 +287,7 @@ def main() -> int:
             name="rollback",
             distribution=distribution,
             workspace=workspace,
-            startup_platform="neural-extractor-invalid-platform",
+            startup_platform="openfetch-invalid-platform",
             startup_timeout=max(3, min(args.startup_timeout, 30)),
             result_timeout=args.result_timeout,
         )

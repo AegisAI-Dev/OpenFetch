@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from neural_extractor_v3.core.process_control import (
+from openfetch.core.process_control import (
     OwnedProcessSupervisor,
     ProcessCancelledError,
     ProcessInactivityTimeoutError,
@@ -249,7 +249,7 @@ def test_activity_clock_arming_discards_pre_monitoring_time() -> None:
     moment monitoring begins. Otherwise launch/setup time is reported as output
     inactivity — the defect behind the flaky CI failure.
     """
-    from neural_extractor_v3.core.process_control import _ActivityClock
+    from openfetch.core.process_control import _ActivityClock
 
     started_at = 1_000.0
     clock = _ActivityClock(started_at)
@@ -286,7 +286,7 @@ def _delay_supervisor_setup(monkeypatch, seconds: float) -> list[int]:
 
     Returns the list of delayed PIDs so a caller can prove the delay ran.
     """
-    from neural_extractor_v3.core import process_control
+    from openfetch.core import process_control
 
     real_identity = process_control._process_identity
     delayed: list[int] = []
@@ -504,7 +504,7 @@ def test_crashed_owner_record_recovers_only_its_exact_process_tree(tmp_path):
     helper_code = textwrap.dedent(
         """
         import sys
-        from neural_extractor_v3.core.process_control import (
+        from openfetch.core.process_control import (
             OwnedProcessSupervisor,
             ProcessLimits,
         )

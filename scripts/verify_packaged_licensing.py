@@ -18,6 +18,21 @@ from typing import Protocol
 
 from PyInstaller.archive.readers import CArchiveReader
 
+try:
+    from scripts.project_identity import (
+        APP_NAME,
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_DIST_NAME,
+    )
+except ModuleNotFoundError:  # executed directly as scripts/verify_packaged_licensing.py
+    from project_identity import (  # type: ignore[no-redef]
+        APP_NAME,
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_DIST_NAME,
+    )
+
 CPYTHON_LIBFFI_SHA256 = (
     "d1682615247e165ba8aa0cff59e090a0b1b6b90793e48733f441dff8d8e6328e"
 )
@@ -100,11 +115,11 @@ PROHIBITED_LEGACY_SHA256S = frozenset(
 )
 PROHIBITED_LEGACY_SIZES = frozenset({234709652, 193141493})
 
-ONEFOLDER_ROOT_NAME = "NeuralExtractorV3-3.0.8-windows-x64"
-ONEFOLDER_LAUNCHER_PATH = "NeuralExtractorV3.exe"
+ONEFOLDER_ROOT_NAME = ONEFOLDER_DIST_NAME
+ONEFOLDER_LAUNCHER_PATH = EXECUTABLE_NAME
 ONEFOLDER_DIRECTORY_MANIFEST_NAME = f"{ONEFOLDER_ROOT_NAME}-directory-manifest.json"
 # The three external runtime tools are pinned to the audited byte-exact builds
-# (same hashes as NeuralExtractorV3.spec require_sha256 pins).
+# (same hashes as OpenFetch.spec require_sha256 pins).
 ONEFOLDER_PINNED_EXECUTABLE_SHA256 = {
     "bin/node.exe": "39d45b5933f339d3ebdebd76474893dab5d7da1038920f65cf5bbcf0f20f3636",
     "bin/ffmpeg.exe": "6ed7e5c931d3cbc72931ee7e97efc4b7d8a1287f03c60585fab81a6a293b2e0e",
@@ -813,7 +828,7 @@ def _load_onefolder_zip(handle: zipfile.ZipFile) -> tuple[dict[str, _TreeMember]
 
 def _scan_onefolder_launcher(payload: bytes) -> list[str]:
     errors: list[str] = []
-    with tempfile.TemporaryDirectory(prefix="neural-onefolder-verify-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="openfetch-onefolder-verify-") as temporary:
         executable = Path(temporary) / ONEFOLDER_LAUNCHER_PATH
         executable.write_bytes(payload)
         try:
@@ -1103,8 +1118,8 @@ def _verify_onefolder_directory_manifest(
         return errors + ["directory update manifest fields are invalid"]
     expected_values = {
         "schema_version": 1,
-        "application_name": "Neural Extractor V3",
-        "release_version": "3.0.8",
+        "application_name": APP_NAME,
+        "release_version": APPLICATION_VERSION,
         "platform": "windows",
         "architecture": "x64",
         "channel": "stable",

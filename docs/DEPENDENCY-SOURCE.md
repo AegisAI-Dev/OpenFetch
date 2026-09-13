@@ -1,5 +1,11 @@
 # Dependency source and binary-distribution plan
 
+> OpenFetch is the renamed Neural Extractor V3. Version-specific evidence in this
+> document was recorded for the audited Neural Extractor V3.0.8 candidate; artifact
+> and path names that begin with `NeuralExtractorV3` refer to that audited build and
+> must be regenerated for an OpenFetch public candidate.
+
+
 Public-distribution verdict: HOLD
 Release-gate-status: HOLD
 Qualified-review-status: HOLD
@@ -34,7 +40,7 @@ fingerprint.
 
 ## Main distribution boundary
 
-The main EXE contains Neural Extractor, CPython, PyInstaller runtime support,
+The main EXE contains OpenFetch, CPython, PyInstaller runtime support,
 PySide6/Qt/Shiboken, locked Python packages, Node.js, FFmpeg/ffprobe, and
 Microsoft runtime files enumerated in `THIRD_PARTY_LICENSES.txt`.
 

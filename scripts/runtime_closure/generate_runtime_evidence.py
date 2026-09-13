@@ -423,7 +423,7 @@ def python_manifest(native: list[dict[str, Any]]) -> dict[str, Any]:
             {"component": "HACL*", "version": "bb3d0dc8d9d15a5cd51094d5b69e70aa09005ff0", "path": "Python-3.12.9/Modules/_hacl"},
             {"component": "BLAKE2 reference-derived code", "version": "CPython 3.12.9 snapshot", "path": "Python-3.12.9/Modules/_blake2"},
         ],
-        "modifications": "Upstream PBS recipe/patch set retained; no Neural Extractor patch to CPython or its native dependencies is declared.",
+        "modifications": "Upstream PBS recipe/patch set retained; no project patch to CPython or its native dependencies is declared.",
         "blockers": [
             "The exact Visual Studio 2022 point version, Windows SDK selection, buildhost image and original PBS release build log are not retained.",
             "The libffi archive is a commit snapshot; the upstream recipe used a Git branch checkout and exact repository metadata is not reproduced without Git.",

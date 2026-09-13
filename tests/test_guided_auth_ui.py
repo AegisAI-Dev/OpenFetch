@@ -10,14 +10,14 @@ import pytest
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QApplication
 
-from neural_extractor_v3.core import youtube_connection as connection_module
-from neural_extractor_v3.core.youtube_connection import (
+from openfetch.core import youtube_connection as connection_module
+from openfetch.core.youtube_connection import (
     ACTIVE_PROVIDER_KEY,
     ConnectionState,
     ManagedBrowser,
 )
-from neural_extractor_v3.gui import main_window as gui_module
-from neural_extractor_v3.models import DownloadJob
+from openfetch.gui import main_window as gui_module
+from openfetch.models import DownloadJob
 
 
 @pytest.fixture

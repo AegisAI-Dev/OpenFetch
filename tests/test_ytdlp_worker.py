@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from neural_extractor_v3.core import ytdlp_worker
-from neural_extractor_v3.core.pot_provider import PROVIDER_EXTRACTOR_KEY
+from openfetch.core import ytdlp_worker
+from openfetch.core.pot_provider import PROVIDER_EXTRACTOR_KEY
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -376,7 +376,7 @@ def test_worker_protocol_survives_cp1252_environment_with_all_unicode_classes():
     environment["PYTHONIOENCODING"] = "cp1252"
 
     completed = subprocess.run(
-        [sys.executable, "-m", "neural_extractor_v3.core.ytdlp_worker"],
+        [sys.executable, "-m", "openfetch.core.ytdlp_worker"],
         input=json.dumps({"mode": "protocol_smoke"}).encode("utf-8"),
         capture_output=True,
         cwd=PROJECT_ROOT,

@@ -31,6 +31,7 @@ from pathlib import Path
 from build_offline_distribution import (
     APPLICATION_VERSION,
     DIST_NAME,
+    EXECUTABLE_NAME,
     ZIP_NAME,
     copy_compliance_material,
     deterministic_zip,
@@ -171,7 +172,7 @@ def regenerate_binary_map(project_root: Path, distribution: Path, output_root: P
 def generate_directory_manifest(project_root: Path, distribution: Path, output_root: Path) -> Path:
     sys.path.insert(0, str(project_root / "src"))
     try:
-        from neural_extractor_v3.core.update_directory_installer import (
+        from openfetch.core.update_directory_installer import (
             DirectoryUpdateManifest,
             expected_directory_manifest_filename,
         )
@@ -216,7 +217,7 @@ def main() -> int:
     project_root = args.project_root.resolve()
     source = args.source_dist.resolve()
     output_root = args.output_root.resolve()
-    if not (source / "NeuralExtractorV3.exe").is_file():
+    if not (source / EXECUTABLE_NAME).is_file():
         raise RuntimeError(f"Source distribution has no launcher: {source}")
     if source.name != DIST_NAME:
         raise RuntimeError(f"Source distribution must be named {DIST_NAME}: {source.name}")
@@ -250,9 +251,9 @@ def main() -> int:
             "sha256": sha256_file(manifest_path),
         },
         "executable": {
-            "path": f"{DIST_NAME}/NeuralExtractorV3.exe",
-            "size": (distribution / "NeuralExtractorV3.exe").stat().st_size,
-            "sha256": sha256_file(distribution / "NeuralExtractorV3.exe"),
+            "path": f"{DIST_NAME}/{EXECUTABLE_NAME}",
+            "size": (distribution / EXECUTABLE_NAME).stat().st_size,
+            "sha256": sha256_file(distribution / EXECUTABLE_NAME),
         },
     }
     (output_root / "RELEASE-ASSET-REPORT.json").write_text(

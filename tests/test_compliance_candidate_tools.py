@@ -16,7 +16,7 @@ from scripts import verify_distribution_closure as closure
 @pytest.mark.parametrize(
     ("path", "components"),
     [
-        ("NeuralExtractorV3.exe", {"project", "pyinstaller", "cpython-runtime", "python-package"}),
+        ("OpenFetch.exe", {"project", "pyinstaller", "cpython-runtime", "python-package"}),
         ("_internal/bin/node.exe", {"node"}),
         ("_internal/bin/ffmpeg.exe", {"ffmpeg"}),
         ("_internal/PySide6/Qt6Core.dll", {"pyside", "qt"}),
@@ -50,7 +50,7 @@ def test_binary_map_self_reference_is_canonical(tmp_path):
     binary_map = distribution / "compliance" / "BINARY-TO-SOURCE-MAP.json"
     binary_map.parent.mkdir(parents=True)
     binary_map.write_text("{}\n", encoding="utf-8")
-    (distribution / "NeuralExtractorV3.exe").write_bytes(b"MZ-candidate")
+    (distribution / "OpenFetch.exe").write_bytes(b"MZ-candidate")
 
     first = closure.audit_distribution(distribution, tmp_path)
     binary_map.write_text(json.dumps(first, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -202,8 +202,8 @@ def test_build_input_lock_is_machine_readable(tmp_path):
 def test_release_artifact_gate_rejects_provider_and_requires_one_folder_layout(tmp_path):
     artifact = tmp_path / "candidate.zip"
     with zipfile.ZipFile(artifact, "w") as archive:
-        archive.writestr("NeuralExtractorV3/NeuralExtractorV3.exe", b"candidate")
-        archive.writestr("NeuralExtractorV3/yt_dlp_plugins/getpot_bgutil.py", b"provider")
+        archive.writestr("OpenFetch/OpenFetch.exe", b"candidate")
+        archive.writestr("OpenFetch/yt_dlp_plugins/getpot_bgutil.py", b"provider")
 
     failures = release_gate.verify_artifact(tmp_path, artifact)
 

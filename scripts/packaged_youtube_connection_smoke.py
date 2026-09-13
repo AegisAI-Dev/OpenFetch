@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from neural_extractor_v3.config import VERSION
+from openfetch.config import EXECUTABLE_STEM, VERSION
 
 
 def _run(executable: Path, argument: str, result: Path, timeout: int = 30) -> dict:
@@ -39,14 +39,14 @@ def main() -> int:
         "executable",
         nargs="?",
         type=Path,
-        default=Path("dist/NeuralExtractorV3.exe"),
+        default=Path("dist/OpenFetch.exe"),
     )
     args = parser.parse_args()
     executable = args.executable.resolve()
     if not executable.is_file():
         raise SystemExit(f"Packaged executable not found: {executable}")
 
-    with tempfile.TemporaryDirectory(prefix="neural-extractor-packaged-smoke-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="openfetch-packaged-smoke-") as temporary:
         root = Path(temporary)
         connection = _run(
             executable,
@@ -74,7 +74,7 @@ def main() -> int:
         timeout=30,
         text=True,
     )
-    expected_version = f"NeuralExtractorV3 {VERSION}"
+    expected_version = f"{EXECUTABLE_STEM} {VERSION}"
     if version.returncode or version.stdout.strip() != expected_version:
         raise RuntimeError(
             f"Packaged version smoke failed: exit={version.returncode}; "

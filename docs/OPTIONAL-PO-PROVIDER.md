@@ -1,5 +1,11 @@
 # Optional external PO Token provider
 
+> OpenFetch is the renamed Neural Extractor V3. Version-specific evidence in this
+> document was recorded for the audited Neural Extractor V3.0.8 candidate; artifact
+> and path names that begin with `NeuralExtractorV3` refer to that audited build and
+> must be regenerated for an OpenFetch public candidate.
+
+
 Release-gate-status: HOLD
 
 Audit date: 2026-07-22  
@@ -11,7 +17,7 @@ application contains only a first-party adapter for an optional, separately
 installed helper process. Normal downloads remain available when the helper is
 absent, invalid, incompatible, times out, or is cancelled.
 
-The helper is **not** part of the Neural Extractor EXE, release ZIP,
+The helper is **not** part of the OpenFetch EXE, release ZIP,
 corresponding-source archive, license-text archive, or updater payload. Neural
 Extractor must not install, download, repair, update, or activate it silently.
 It may provide neutral manual instructions pointing to an independently
@@ -52,17 +58,19 @@ Installation is an explicit user action:
 1. obtain the helper only from the official helper/provider distribution named
    by its maintainer;
 2. verify the publisher's version and SHA-256 records;
-3. install the complete helper package outside the Neural Extractor application
+3. install the complete helper package outside the OpenFetch application
    and source trees; and
 4. explicitly place or approve an activation manifest at
-   `%LOCALAPPDATA%\NeuralExtractorV3\optional-po-provider\active.json`.
+   `%LOCALAPPDATA%\OpenFetch\optional-po-provider\active.json` (an existing
+   `%LOCALAPPDATA%\NeuralExtractorV3\optional-po-provider\active.json` is copied there on
+   first start).
 
 No token, cookie, credential, or content binding belongs in that manifest. The
-helper package's own installer, if any, is outside Neural Extractor and must be
+helper package's own installer, if any, is outside OpenFetch and must be
 started deliberately by the user. Removing `active.json` disables the
 integration without affecting ordinary downloads.
 
-Neural Extractor accepts exactly the following activation-manifest schema
+OpenFetch accepts exactly the following activation-manifest schema
 (JSON object; no additional or duplicate keys). This is an abridged shape
 example, not an installable manifest: the audited `files` array contains all
 5,767 records and must never be shortened in `active.json`.
@@ -108,7 +116,7 @@ case-fold collision, unsupported entry, or non-ASCII package path while
 recomputing its own identity.
 
 The manifest must enumerate every regular file and no extras: relative path,
-byte size, and lowercase SHA-256. Neural Extractor sorts the entries
+byte size, and lowercase SHA-256. OpenFetch sorts the entries
 case-insensitively and computes `package_sha256` over each record as:
 
 ```text
@@ -132,8 +140,8 @@ under `package_root` makes the next integrity check fail.
 
 Each operation starts a new manifest-pinned command with `shell=False`, the
 verified package root as its working directory, and a reduced environment. No
-provider Python module is imported into Neural Extractor or its yt-dlp worker;
-no JavaScript runtime is loaded into the Neural Extractor process; and no Python
+provider Python module is imported into OpenFetch or its yt-dlp worker;
+no JavaScript runtime is loaded into the OpenFetch process; and no Python
 object is shared with the helper.
 
 The audited helper command is exactly `node.exe helper.mjs`. Runtime data is not
@@ -162,7 +170,7 @@ evidence for licensing/provenance, but the helper runtime does not import those
 Python files and the main application does not load any file from that package
 into its process.
 
-For the bounded provider attempt, Neural Extractor disables yt-dlp user-plugin
+For the bounded provider attempt, OpenFetch disables yt-dlp user-plugin
 discovery, clears the PO-provider registries, and registers only its first-party
 adapter. The attempt is recognized only with `player_client=mweb`,
 `fetch_pot=auto`, `pot_trace=false`, and the adapter's protocol marker set to
@@ -276,7 +284,7 @@ inactivity timeout are both 30 seconds.
 
 Content bindings and returned PO tokens exist only in the anonymous pipe and
 process memory. They are never placed in command-line arguments, environment
-variables, ownership records, or logs. Neural Extractor passes a validated
+variables, ownership records, or logs. OpenFetch passes a validated
 returned token to its in-process first-party yt-dlp adapter; it does not import
 the third-party provider. Diagnostics expose only non-sensitive status/error
 codes.
@@ -384,8 +392,8 @@ distributes it must audit and accompany it with, as applicable:
   network environment without placing a binding, token, cookie, or credential
   in argv, environment variables, stderr, or logs.
 
-Those materials belong to the helper distribution, not the Neural Extractor
-release. Neural Extractor must not copy the helper, its provider sources, npm
+Those materials belong to the helper distribution, not the OpenFetch
+release. OpenFetch must not copy the helper, its provider sources, npm
 tree, native binaries, license bundle, or source offer into its EXE, release
 ZIP, source archive, updater, cache, or installer.
 

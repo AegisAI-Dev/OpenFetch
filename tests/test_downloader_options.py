@@ -5,14 +5,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from neural_extractor_v3.core import downloader as downloader_module
-from neural_extractor_v3.core.auth import (
+from openfetch.core import downloader as downloader_module
+from openfetch.core.auth import (
     AuthResolution,
     AuthStrategy,
     BrowserCookieSource,
     CookieFileStatus,
 )
-from neural_extractor_v3.core.downloader import (
+from openfetch.core.downloader import (
     AUDIO_M4A_SELECTOR,
     AUDIO_MP3_SELECTOR,
     DEFAULT_YOUTUBE_CLIENTS,
@@ -24,10 +24,10 @@ from neural_extractor_v3.core.downloader import (
     YtdlpRunResult,
     recover_stale_download_processes,
 )
-from neural_extractor_v3.core.js_runtime import JavaScriptRuntimeStatus
-from neural_extractor_v3.core.pot_provider import PROVIDER_EXTRACTOR_KEY
-from neural_extractor_v3.core.youtube_errors import FailureCategory
-from neural_extractor_v3.models import (
+from openfetch.core.js_runtime import JavaScriptRuntimeStatus
+from openfetch.core.pot_provider import PROVIDER_EXTRACTOR_KEY
+from openfetch.core.youtube_errors import FailureCategory
+from openfetch.models import (
     DownloadJob,
     DownloadOptions,
     MediaMode,
@@ -335,7 +335,7 @@ def test_media_403_owner_flow_uses_exact_firefox_then_one_mweb_provider(
     monkeypatch,
 ):
     _mock_runtime(monkeypatch, tmp_path)
-    application_data = tmp_path / "NeuralExtractorV3"
+    application_data = tmp_path / "OpenFetch"
     profile = application_data / "youtube" / "firefox-profile"
     profile.mkdir(parents=True)
     monkeypatch.setattr(downloader_module, "app_data_dir", lambda: application_data)
@@ -344,7 +344,7 @@ def test_media_403_owner_flow_uses_exact_firefox_then_one_mweb_provider(
             AuthStrategy("none", "none", {}, attempted_auth=False),
             AuthStrategy(
                 "dedicated_browser",
-                "Dedicated Neural Extractor Firefox profile",
+                "Dedicated OpenFetch Firefox profile",
                 {"cookiesfrombrowser": ("firefox", str(profile.resolve()))},
                 attempted_auth=True,
             ),
@@ -417,7 +417,7 @@ def test_media_403_owner_flow_uses_exact_firefox_then_one_mweb_provider(
 
 def test_stale_verified_provider_fails_closed_before_auth_or_pot(tmp_path, monkeypatch):
     _mock_runtime(monkeypatch, tmp_path)
-    application_data = tmp_path / "NeuralExtractorV3"
+    application_data = tmp_path / "OpenFetch"
     profile = application_data / "youtube" / "firefox-profile"
     profile.mkdir(parents=True)
     monkeypatch.setattr(downloader_module, "app_data_dir", lambda: application_data)
@@ -426,7 +426,7 @@ def test_stale_verified_provider_fails_closed_before_auth_or_pot(tmp_path, monke
             AuthStrategy("none", "none", {}, attempted_auth=False),
             AuthStrategy(
                 "dedicated_browser",
-                "Dedicated Neural Extractor Firefox profile",
+                "Dedicated OpenFetch Firefox profile",
                 {"cookiesfrombrowser": ("firefox", str(profile.resolve()))},
                 attempted_auth=True,
             ),
@@ -970,7 +970,7 @@ def test_connected_profile_is_structured_first_fallback_and_suppresses_browser_c
     tmp_path, monkeypatch
 ):
     _mock_runtime(monkeypatch, tmp_path)
-    application_data = tmp_path / "NeuralExtractorV3"
+    application_data = tmp_path / "OpenFetch"
     profile = application_data / "youtube" / "firefox-profile"
     profile.mkdir(parents=True)
     monkeypatch.setattr(downloader_module, "app_data_dir", lambda: application_data)
@@ -984,7 +984,7 @@ def test_connected_profile_is_structured_first_fallback_and_suppresses_browser_c
             AuthStrategy("none", "none", {}, attempted_auth=False),
             AuthStrategy(
                 "dedicated_firefox",
-                "Dedicated Neural Extractor Firefox profile",
+                "Dedicated OpenFetch Firefox profile",
                 {"cookiesfrombrowser": ("firefox", str(profile.resolve()))},
                 attempted_auth=True,
             ),
@@ -1034,7 +1034,7 @@ def test_rotated_dedicated_cookies_mark_session_expired_without_blind_fallback(
     tmp_path, monkeypatch
 ):
     _mock_runtime(monkeypatch, tmp_path)
-    application_data = tmp_path / "NeuralExtractorV3"
+    application_data = tmp_path / "OpenFetch"
     profile = application_data / "youtube" / "firefox-profile"
     profile.mkdir(parents=True)
     monkeypatch.setattr(downloader_module, "app_data_dir", lambda: application_data)
@@ -1043,7 +1043,7 @@ def test_rotated_dedicated_cookies_mark_session_expired_without_blind_fallback(
             AuthStrategy("none", "none", {}, attempted_auth=False),
             AuthStrategy(
                 "dedicated_firefox",
-                "Dedicated Neural Extractor Firefox profile",
+                "Dedicated OpenFetch Firefox profile",
                 {"cookiesfrombrowser": ("firefox", str(profile.resolve()))},
                 attempted_auth=True,
             ),

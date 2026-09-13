@@ -1,4 +1,4 @@
-name: Build and Release Neural Extractor V3
+name: Build and Release OpenFetch (compliance-gated)
 
 on:
   push:
@@ -107,7 +107,7 @@ jobs:
           $asset = "cpython-3.12.9+20250317-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
           $expectedSha256 = "ee338839315bdd8af5fc935f9595eca20ebebdd250726c5816b2d0cf94d1e661"
           $archive = Join-Path $env:RUNNER_TEMP $asset
-          $runtime = Join-Path $env:RUNNER_TEMP "neural-extractor-python-3.12.9-20250317"
+          $runtime = Join-Path $env:RUNNER_TEMP "openfetch-python-3.12.9-20250317"
           $url = "https://github.com/astral-sh/python-build-standalone/releases/download/20250317/$asset"
           Invoke-WebRequest -Uri $url -OutFile $archive
           $actualSha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -179,7 +179,7 @@ jobs:
           $ffmpegAsset = "ffmpeg-N-125365-g9a01c1cb6a-win64-gpl.zip"
           $ffmpegSha256 = "52c0383c460f0ec1039088f1591921fb82e3b870b32aab8faf2ff1e5ae14bf9d"
           $archive = Join-Path $env:RUNNER_TEMP $ffmpegAsset
-          $expanded = Join-Path $env:RUNNER_TEMP "neural-extractor-ffmpeg"
+          $expanded = Join-Path $env:RUNNER_TEMP "openfetch-ffmpeg"
           $url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/$ffmpegVersion/$ffmpegAsset"
           Invoke-WebRequest -Uri $url -OutFile $archive
           $actualSha256 = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -228,18 +228,18 @@ jobs:
         run: |
           $env:PYTHONHASHSEED = "0"
           $env:SOURCE_DATE_EPOCH = "0"
-          & $env:PYTHON_EXE -m PyInstaller NeuralExtractorV3.spec --clean --noconfirm
+          & $env:PYTHON_EXE -m PyInstaller OpenFetch.spec --clean --noconfirm
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify packaged version and bundled runtimes
         shell: pwsh
         run: |
-          $process = Start-Process -FilePath "dist\NeuralExtractorV3.exe" -ArgumentList "--version" -Wait -PassThru -WindowStyle Hidden
+          $process = Start-Process -FilePath "dist\OpenFetch.exe" -ArgumentList "--version" -Wait -PassThru -WindowStyle Hidden
           if ($process.ExitCode -ne 0) {
             Write-Error "Packaged --version smoke test failed with exit code $($process.ExitCode)."
             exit 1
           }
-          $archiveListing = & pyi-archive_viewer "dist\NeuralExtractorV3.exe" -l
+          $archiveListing = & pyi-archive_viewer "dist\OpenFetch.exe" -l
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           foreach ($runtime in @("bin\\node.exe", "bin\\ffmpeg.exe", "bin\\ffprobe.exe")) {
             if (-not ($archiveListing -match [regex]::Escape($runtime))) {
@@ -247,7 +247,7 @@ jobs:
               exit 1
             }
           }
-          & $env:PYTHON_EXE scripts/verify_packaged_licensing.py "dist\NeuralExtractorV3.exe"
+          & $env:PYTHON_EXE scripts/verify_packaged_licensing.py "dist\OpenFetch.exe"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           foreach ($smoke in @(
             @{ Name = "runtime"; Argument = "--internal-runtime-smoke" },
@@ -256,9 +256,9 @@ jobs:
             @{ Name = "provider-boundary"; Argument = "--internal-provider-media-smoke" },
             @{ Name = "youtube-connection"; Argument = "--internal-youtube-connection-smoke" }
           )) {
-            $result = Join-Path $env:RUNNER_TEMP "neural-extractor-$($smoke.Name)-smoke.json"
+            $result = Join-Path $env:RUNNER_TEMP "openfetch-$($smoke.Name)-smoke.json"
             $arguments = "$($smoke.Argument) `"$result`""
-            $process = Start-Process -FilePath "dist\NeuralExtractorV3.exe" -ArgumentList $arguments -PassThru -WindowStyle Hidden
+            $process = Start-Process -FilePath "dist\OpenFetch.exe" -ArgumentList $arguments -PassThru -WindowStyle Hidden
             if (-not $process.WaitForExit(60000)) {
               & "$env:SystemRoot\System32\taskkill.exe" /PID $process.Id /T /F | Out-Null
               Write-Error "Packaged $($smoke.Name) smoke timed out; its process tree was terminated."
@@ -279,14 +279,14 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.release.outputs.version }}"
-          $exe = "dist\NeuralExtractorV3.exe"
-          $versioned = "dist\NeuralExtractorV3-$version-windows-x64.exe"
-          $manifest = "dist\NeuralExtractorV3-$version-manifest.json"
-          $artifactInventory = "dist\NeuralExtractorV3-$version-THIRD_PARTY_LICENSES-artifact-companion.txt"
-          $sourceName = "NeuralExtractorV3-$version-corresponding-source.zip"
+          $exe = "dist\OpenFetch.exe"
+          $versioned = "dist\OpenFetch-$version-windows-x64.exe"
+          $manifest = "dist\OpenFetch-$version-manifest.json"
+          $artifactInventory = "dist\OpenFetch-$version-THIRD_PARTY_LICENSES-artifact-companion.txt"
+          $sourceName = "OpenFetch-$version-corresponding-source.zip"
           $sourceInput = "release-assets\$sourceName"
           $sourceOutput = "dist\$sourceName"
-          $licenseArchive = "dist\NeuralExtractorV3-$version-license-texts.zip"
+          $licenseArchive = "dist\OpenFetch-$version-license-texts.zip"
           if (-not (Test-Path $sourceInput -PathType Leaf)) {
             Write-Error "Validated corresponding-source archive is missing: $sourceInput"
             exit 1
@@ -316,15 +316,15 @@ jobs:
           & $env:PYTHON_EXE scripts/release_tools.py manifest --version $version --exe $versioned --output $manifest --minimum-updater-version 3.0.4
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $expected = @(
-            "NeuralExtractorV3.exe",
-            "NeuralExtractorV3-$version-windows-x64.exe",
-            "NeuralExtractorV3-$version-windows-x64.exe.sha256",
-            "NeuralExtractorV3-$version-manifest.json",
-            "NeuralExtractorV3-$version-THIRD_PARTY_LICENSES-artifact-companion.txt",
+            "OpenFetch.exe",
+            "OpenFetch-$version-windows-x64.exe",
+            "OpenFetch-$version-windows-x64.exe.sha256",
+            "OpenFetch-$version-manifest.json",
+            "OpenFetch-$version-THIRD_PARTY_LICENSES-artifact-companion.txt",
             $sourceName,
             "$sourceName.sha256",
-            "NeuralExtractorV3-$version-license-texts.zip",
-            "NeuralExtractorV3-$version-license-texts.zip.sha256",
+            "OpenFetch-$version-license-texts.zip",
+            "OpenFetch-$version-license-texts.zip.sha256",
             "LICENSE",
             "THIRD_PARTY_LICENSES.txt",
             "THIRD_PARTY_NOTICES.md",
@@ -345,17 +345,17 @@ jobs:
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NeuralExtractorV3-windows-x64
+          name: OpenFetch-windows-x64
           path: |
-            dist/NeuralExtractorV3.exe
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-windows-x64.exe
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-windows-x64.exe.sha256
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-manifest.json
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-THIRD_PARTY_LICENSES-artifact-companion.txt
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-corresponding-source.zip
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-corresponding-source.zip.sha256
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-license-texts.zip
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-license-texts.zip.sha256
+            dist/OpenFetch.exe
+            dist/OpenFetch-${{ steps.release.outputs.version }}-windows-x64.exe
+            dist/OpenFetch-${{ steps.release.outputs.version }}-windows-x64.exe.sha256
+            dist/OpenFetch-${{ steps.release.outputs.version }}-manifest.json
+            dist/OpenFetch-${{ steps.release.outputs.version }}-THIRD_PARTY_LICENSES-artifact-companion.txt
+            dist/OpenFetch-${{ steps.release.outputs.version }}-corresponding-source.zip
+            dist/OpenFetch-${{ steps.release.outputs.version }}-corresponding-source.zip.sha256
+            dist/OpenFetch-${{ steps.release.outputs.version }}-license-texts.zip
+            dist/OpenFetch-${{ steps.release.outputs.version }}-license-texts.zip.sha256
             dist/LICENSE
             dist/THIRD_PARTY_LICENSES.txt
             dist/THIRD_PARTY_NOTICES.md
@@ -366,20 +366,20 @@ jobs:
         with:
           tag_name: ${{ steps.release.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: Neural Extractor V3 ${{ steps.release.outputs.tag }}
+          name: OpenFetch ${{ steps.release.outputs.tag }}
           body_path: docs/release-notes/V${{ steps.release.outputs.version }}.md
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            dist/NeuralExtractorV3.exe
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-windows-x64.exe
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-windows-x64.exe.sha256
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-manifest.json
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-THIRD_PARTY_LICENSES-artifact-companion.txt
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-corresponding-source.zip
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-corresponding-source.zip.sha256
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-license-texts.zip
-            dist/NeuralExtractorV3-${{ steps.release.outputs.version }}-license-texts.zip.sha256
+            dist/OpenFetch.exe
+            dist/OpenFetch-${{ steps.release.outputs.version }}-windows-x64.exe
+            dist/OpenFetch-${{ steps.release.outputs.version }}-windows-x64.exe.sha256
+            dist/OpenFetch-${{ steps.release.outputs.version }}-manifest.json
+            dist/OpenFetch-${{ steps.release.outputs.version }}-THIRD_PARTY_LICENSES-artifact-companion.txt
+            dist/OpenFetch-${{ steps.release.outputs.version }}-corresponding-source.zip
+            dist/OpenFetch-${{ steps.release.outputs.version }}-corresponding-source.zip.sha256
+            dist/OpenFetch-${{ steps.release.outputs.version }}-license-texts.zip
+            dist/OpenFetch-${{ steps.release.outputs.version }}-license-texts.zip.sha256
             dist/LICENSE
             dist/THIRD_PARTY_LICENSES.txt
             dist/THIRD_PARTY_NOTICES.md

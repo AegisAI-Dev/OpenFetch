@@ -1,5 +1,11 @@
 # Microsoft runtime redistribution record
 
+> OpenFetch is the renamed Neural Extractor V3. Version-specific evidence in this
+> document was recorded for the audited Neural Extractor V3.0.8 candidate; artifact
+> and path names that begin with `NeuralExtractorV3` refer to that audited build and
+> must be regenerated for an OpenFetch public candidate.
+
+
 Release-gate-status: **HOLD**
 
 Exact-byte-mapping-status: **52 OF 52 MATCH OBSERVED BUILD INPUTS**
@@ -10,7 +16,7 @@ Qualified-review-status: **REQUIRED**
 
 This is an engineering provenance record, not legal advice, a license grant, or
 proof of entitlement. Microsoft proprietary binaries are not covered by the
-Neural Extractor MIT notice or by third-party open-source source offers.
+OpenFetch MIT notice or by third-party open-source source offers.
 
 ## Exact conveyed scope
 
@@ -30,7 +36,7 @@ files:
 All 52 conveyed bytes match their observed local build inputs. That establishes
 which local files PyInstaller selected. It does not show that the local Windows
 Performance Toolkit installation is an authorized redistribution package, or
-that carriage inside an upstream wheel/runtime grants Neural Extractor an
+that carriage inside an upstream wheel/runtime grants OpenFetch an
 independent right to redistribute each Microsoft file.
 
 ## Preserved candidate terms/evidence
@@ -60,7 +66,7 @@ transfer of rights.
    wheel source is known, but the downstream redistribution basis has not been
    confirmed.
 4. The two root VCRUNTIME files exactly match PBS. PBS provenance does not by
-   itself replace confirmation of Neural Extractor's distribution rights.
+   itself replace confirmation of OpenFetch's distribution rights.
 5. No qualified reviewer has approved the exact 52-file list or the intended
    delivery format.
 

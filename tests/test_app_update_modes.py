@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from neural_extractor_v3 import app as app_module
+from openfetch import app as app_module
 
 
 def test_apply_update_mode_dispatches_before_gui_initialization(monkeypatch, tmp_path):

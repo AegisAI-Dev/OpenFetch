@@ -1,8 +1,13 @@
-# Neural Extractor V3
+# OpenFetch
 
-Neural Extractor V3 is a clean rebuild of the app as a separate professional edition. It downloads single videos, full playlists, YouTube Mixes, batches of links, MP3/M4A audio, SRT subtitles, thumbnails, and optional metadata sidecars.
+**OpenFetch by Brainbyte** — open-source media downloader & toolkit.
 
-## What V3 Includes
+OpenFetch (formerly Neural Extractor V3) downloads single videos, full
+playlists, YouTube Mixes, batches of links, MP3/M4A audio, SRT subtitles,
+thumbnails, and optional metadata sidecars. Upgrading from Neural Extractor keeps
+your settings; see [docs/OPENFETCH-MIGRATION.md](docs/OPENFETCH-MIGRATION.md).
+
+## Features
 
 - Video downloads as MP4 with selectable quality up to best available.
 - Audio downloads as MP3 or M4A with bitrate presets.
@@ -10,7 +15,7 @@ Neural Extractor V3 is a clean rebuild of the app as a separate professional edi
 - Batch queue: paste one URL per line and process them in order.
 - Subtitles saved as `.srt`, including auto-generated subtitles when needed.
 - Thumbnail download as JPG, with optional embedding for audio files.
-- Guided `YouTube verbinden` flow using an isolated Neural Extractor Firefox profile.
+- Guided `YouTube verbinden` flow using an isolated OpenFetch browser profile.
 - Optional `cookies.txt` support retained as an advanced compatibility fallback.
 - Optional metadata JSON output.
 - CLI mode for scripted downloads.
@@ -59,67 +64,72 @@ python main.py --url "https://youtu.be/VIDEO_ID" --mode subtitles_only --subs nl
 
 ## Build Windows EXE
 
-```powershell
-pyinstaller NeuralExtractorV3.spec --clean --noconfirm
-```
-
-Or run:
+The self-updating one-file executable:
 
 ```powershell
-build.bat
+pyinstaller OpenFetch-onefile.spec --clean --noconfirm
 ```
 
-The built executable is written to:
+It is written to `dist\OpenFetch.exe`.
 
-```text
-dist\NeuralExtractorV3.exe
+The compliance-friendly one-folder candidate (`build.bat`) uses
+`OpenFetch.spec` and is written to `dist\OpenFetch-<version>-windows-x64\`. It
+is not published and does not update itself automatically.
+
+## Versioning
+
+`src/openfetch/config.py` `VERSION` is the single authoritative version.
+`pyproject.toml` derives its version from it, and `version_info.txt` is
+generated from it:
+
+```powershell
+python scripts/release_tools.py version-info
+python scripts/release_tools.py validate --release-ref v3.1.0
 ```
 
 ## GitHub Release Pipeline
 
-V3 includes a GitHub Actions workflow at `.github/workflows/build-release.yml`.
-The workflow will:
+`.github/workflows/build-onefile-release.yml` is a manually dispatched,
+owner-confirmed workflow. It requires the exact source version and the phrase
+`PUBLISH-OPENFETCH-<version>`, runs Ruff, compileall, the full test suite and
+manifest checks, builds `OpenFetch-onefile.spec`, runs packaged runtime, GUI,
+provider and updater smokes, publishes the OpenFetch assets in this repository,
+and hands the legacy-named bridge assets to the owner as a workflow artifact.
 
-- require a numeric release version matching both source version files,
-- install Python dependencies,
-- run Ruff, compileall, and tests,
-- build the Windows x64 `NeuralExtractorV3.exe` with PyInstaller,
-- create the exact versioned Windows asset,
-- generate its SHA-256 checksum and strict JSON manifest,
-- publish the EXEs, checksum, and manifest to the GitHub Release.
-
-It runs for tags matching `v*.*.*` and supports `workflow_dispatch` with an
-explicit version. The manual action appears only after the workflow is on the
-default branch. See [docs/UPDATE_ARCHITECTURE.md](docs/UPDATE_ARCHITECTURE.md)
-for the GitHub Desktop and GitHub web release procedure.
+`.github/workflows/build-release.yml` is the compliance-gated one-folder
+workflow and stays fail-closed while the licensing verdict is HOLD. See
+[docs/UPDATE_ARCHITECTURE.md](docs/UPDATE_ARCHITECTURE.md).
 
 ## App Updates
 
 On startup, the desktop app silently checks the latest stable GitHub Release. The
-`Check Updates` button runs the same check manually. V3.0.4 can detect V3.0.5 as
-newer and can download a future
-compatible versioned EXE, validate its strict manifest, size, and SHA-256, install
-through a detached helper, restart, confirm startup, and roll back to the verified
-backup when startup fails. Installation always requires a clear user action.
+`Check Updates` button runs the same check manually. A newer release is
+downloaded only after a clear user action, validated against its strict
+manifest, size, and SHA-256, installed through a detached helper, restarted,
+confirmed, and rolled back to the verified backup when startup fails.
 
-V3.0.2 and V3.0.3 contain the defective updater handoff and may need one manual
-upgrade to V3.0.4. Source-mode or non-writable installs retain the manual
-release-page fallback.
+Neural Extractor 3.0.4 and later update to OpenFetch in place. Source-mode,
+one-folder, or non-writable installs keep the manual release-page fallback.
 
-The default release repository is:
+The canonical release repository is:
 
 ```text
-AegisAI-Dev/NeuralExtractor
+AegisAI-Dev/OpenFetch
 ```
 
 The automatic update source is intentionally pinned and is not configurable at
-runtime. The EXE is SHA-256 verified but is not Authenticode publisher-signed.
+runtime; redirects are never followed. Installed Neural Extractor V3 builds are
+pinned to the pre-rename slug and are served once, for the 3.1.0 migration, by
+the owner-controlled bridge repository `AegisAI-Dev/NeuralExtractor`; OpenFetch
+itself never reads it. See
+[docs/OPENFETCH-MIGRATION.md](docs/OPENFETCH-MIGRATION.md). The EXE is SHA-256
+verified but is not Authenticode publisher-signed.
 
 ## Notes
 
-- FFmpeg is required for merging video/audio, MP3 conversion, thumbnail embedding, and SRT conversion. If a local `bin` folder exists, V3 will use it automatically.
+- FFmpeg is required for merging video/audio, MP3 conversion, thumbnail embedding, and SRT conversion. If a local `bin` folder exists, OpenFetch will use it automatically.
 - When YouTube requests sign-in or human verification, use `YouTube verbinden`.
-  Neural Extractor opens a separate Firefox profile and never receives the password.
+  OpenFetch opens a separate browser profile and never receives the password.
 - `cookies.txt` is an optional advanced fallback, not the normal authentication workflow.
 - Respect YouTube terms, creator rights, and local law.
 
@@ -129,15 +139,15 @@ limitations, renewal/disconnect behavior, and owner field-test plan.
 
 ## License and ownership
 
-Neural Extractor-owned portions are free and open-source software under the
+OpenFetch-owned portions are free and open-source software under the
 MIT License:
 
 `Copyright (c) 2025-2026 0xRootNull`
 
 The public author and copyright-holder attribution is the pseudonym
 `0xRootNull`; the identity behind the pseudonym is intentionally not
-published. `Neuralshield` is a project name, not a registered company or legal
-entity. Third-party components remain governed by their respective licenses
+published. `Brainbyte` is the brand under which OpenFetch is presented, not a
+registered company or legal entity. Third-party components remain governed by their respective licenses
 and are not relicensed under MIT. See
 [docs/PROJECT-OWNERSHIP-DECLARATION.md](docs/PROJECT-OWNERSHIP-DECLARATION.md)
 and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

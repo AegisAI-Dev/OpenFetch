@@ -39,7 +39,7 @@ SOURCE_HASH_MANIFEST = "SOURCE-HASHES.sha256"
 BUILD_INPUTS_LOCK = "BUILD-INPUTS.lock"
 WHEELHOUSE = "build_inputs/wheels/cp312-win_amd64"
 WHEEL_MIRROR = "build_inputs/wheels"
-USER_AGENT = "NeuralExtractor-audit/3.0.8"
+USER_AGENT = "OpenFetch-build-inputs/1"
 _SOURCE_HASH_LINE = re.compile(r"^([0-9a-f]{64})  (.+)$")
 ALLOWED_SUFFIXES = frozenset({".whl", ".zip", ".gz", ".json"})
 # Runtime state that must never appear beside pinned build inputs.

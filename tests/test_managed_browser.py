@@ -8,13 +8,13 @@ import pytest
 import yt_dlp.cookies as ytdlp_cookies
 from yt_dlp.version import __version__ as ytdlp_version
 
-from neural_extractor_v3.core import youtube_connection as connection_module
-from neural_extractor_v3.core.auth import (
+from openfetch.core import youtube_connection as connection_module
+from openfetch.core.auth import (
     BrowserCookieFailureKind,
     classify_browser_cookie_extraction_error,
     resolve_auth_strategies,
 )
-from neural_extractor_v3.core.youtube_connection import (
+from openfetch.core.youtube_connection import (
     ChromeDiscovery,
     ConnectionState,
     FirefoxDiscovery,
@@ -74,7 +74,7 @@ def chrome_manager(
     return YouTubeConnectionManager(
         settings or MemorySettings(),
         browser=ManagedBrowser.CHROME,
-        application_data=tmp_path / "LocalAppData" / "NeuralExtractorV3",
+        application_data=tmp_path / "LocalAppData" / "OpenFetch",
         discovery=ChromeDiscovery(
             registry_reader=lambda: [chrome],
             environ={},
@@ -215,7 +215,7 @@ def test_chrome_launch_is_argv_only_tracks_tree_and_never_uses_unsafe_flags(tmp_
     manager = YouTubeConnectionManager(
         MemorySettings(),
         browser=ManagedBrowser.CHROME,
-        application_data=tmp_path / "LocalAppData" / "NeuralExtractorV3",
+        application_data=tmp_path / "LocalAppData" / "OpenFetch",
         discovery=ChromeDiscovery(
             registry_reader=lambda: [chrome],
             environ={},
@@ -294,7 +294,7 @@ def test_inconclusive_process_probe_fails_safe_without_deleting_live_lock(tmp_pa
     manager = YouTubeConnectionManager(
         MemorySettings(),
         browser=ManagedBrowser.CHROME,
-        application_data=tmp_path / "LocalAppData" / "NeuralExtractorV3",
+        application_data=tmp_path / "LocalAppData" / "OpenFetch",
         discovery=ChromeDiscovery(
             registry_reader=lambda: [chrome],
             environ={},
@@ -420,7 +420,7 @@ def test_unsupported_chrome_verification_never_marks_connected_and_firefox_is_pr
 
 
 def test_v305_firefox_settings_migrate_by_preservation_while_chrome_defaults_new(tmp_path):
-    application_data = tmp_path / "LocalAppData" / "NeuralExtractorV3"
+    application_data = tmp_path / "LocalAppData" / "OpenFetch"
     firefox_profile = application_data / "youtube" / "firefox-profile"
     firefox_profile.mkdir(parents=True)
     settings = MemorySettings(

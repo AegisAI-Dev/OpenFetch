@@ -1,5 +1,5 @@
-from neural_extractor_v3.core.format_selection import select_discovered_format
-from neural_extractor_v3.models import MediaMode
+from openfetch.core.format_selection import select_discovered_format
+from openfetch.models import MediaMode
 
 
 def fmt(
