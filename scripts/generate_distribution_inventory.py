@@ -22,7 +22,12 @@ from typing import Protocol
 
 from PyInstaller.archive.readers import CArchiveReader
 
-REPORT_SCHEMA = "Neural Extractor distribution inventory v1"
+try:
+    from scripts.project_identity import APP_NAME, APPLICATION_VERSION
+except ModuleNotFoundError:  # executed directly as scripts/generate_distribution_inventory.py
+    from project_identity import APP_NAME, APPLICATION_VERSION  # type: ignore[no-redef]
+
+REPORT_SCHEMA = f"{APP_NAME} distribution inventory v1"
 EXPECTED_LIBFFI_SHA256 = "d1682615247e165ba8aa0cff59e090a0b1b6b90793e48733f441dff8d8e6328e"
 ROOT_LIBFFI_PATH = "libffi-8.dll"
 
@@ -140,8 +145,8 @@ def _components(
     )
     return (
         Component(
-            "Neural Extractor V3",
-            "3.0.8",
+            APP_NAME,
+            APPLICATION_VERSION,
             "MIT for project-owned portions",
             "0xRootNull; Copyright (c) 2025-2026",
             "Frozen application modules in the embedded PYZ plus entry-point script",
@@ -1127,7 +1132,7 @@ def render_inventory(
         outer_hash = "OMITTED FROM EMBEDDED REPORT (self-reference avoidance)"
 
     lines: list[str] = [
-        "NEURAL EXTRACTOR V3 - DETERMINISTIC DISTRIBUTION INVENTORY",
+        f"{APP_NAME.upper()} - DETERMINISTIC DISTRIBUTION INVENTORY",
         "=" * 62,
         "",
         "Status: HOLD - NOT APPROVED FOR PUBLIC DISTRIBUTION",

@@ -15,10 +15,24 @@ import zlib
 from pathlib import Path
 from typing import Any
 
-APPLICATION_VERSION = "3.0.8"
+try:
+    from scripts.project_identity import (
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_DIST_NAME,
+        ONEFOLDER_SPEC_NAME,
+    )
+except ModuleNotFoundError:  # executed directly as scripts/build_offline_distribution.py
+    from project_identity import (  # type: ignore[no-redef]
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_DIST_NAME,
+        ONEFOLDER_SPEC_NAME,
+    )
+
 BUILD_LABEL = "pyside-provider-free-compliance-candidate"
-ZIP_NAME = f"NeuralExtractorV3-{APPLICATION_VERSION}-windows-x64.zip"
-DIST_NAME = f"NeuralExtractorV3-{APPLICATION_VERSION}-windows-x64"
+ZIP_NAME = f"{ONEFOLDER_DIST_NAME}.zip"
+DIST_NAME = ONEFOLDER_DIST_NAME
 FIXED_ZIP_DATE = (1980, 1, 1, 0, 0, 0)
 TARGET_WHEELHOUSE = Path("build_inputs/wheels/cp312-win_amd64")
 PINNED_PYTHON = (3, 12, 9)
@@ -41,7 +55,7 @@ PROJECT_FILES = (
     "build.bat",
     "LICENSE",
     "main.py",
-    "NeuralExtractorV3.spec",
+    ONEFOLDER_SPEC_NAME,
     "PROJECT-METADATA.json",
     "pyproject.toml",
     "README.md",
@@ -379,7 +393,7 @@ def main() -> int:
         env=env,
     )
     distribution = dist_path / DIST_NAME
-    executable = distribution / "NeuralExtractorV3.exe"
+    executable = distribution / EXECUTABLE_NAME
     if not executable.is_file():
         raise RuntimeError(
             "The primary spec did not produce the required one-folder distribution"
@@ -440,9 +454,9 @@ def main() -> int:
             "sha256": sha256_file(archive),
         },
         "executable": {
-            "path": f"{DIST_NAME}/NeuralExtractorV3.exe",
-            "size": (output_distribution / "NeuralExtractorV3.exe").stat().st_size,
-            "sha256": sha256_file(output_distribution / "NeuralExtractorV3.exe"),
+            "path": f"{DIST_NAME}/{EXECUTABLE_NAME}",
+            "size": (output_distribution / EXECUTABLE_NAME).stat().st_size,
+            "sha256": sha256_file(output_distribution / EXECUTABLE_NAME),
         },
         "files": files,
     }

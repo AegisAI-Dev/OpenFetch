@@ -1,5 +1,11 @@
 # PySide6 and Qt LGPL compliance plan
 
+> OpenFetch is the renamed Neural Extractor V3. Version-specific evidence in this
+> document was recorded for the audited Neural Extractor V3.0.8 candidate; artifact
+> and path names that begin with `NeuralExtractorV3` refer to that audited build and
+> must be regenerated for an OpenFetch public candidate.
+
+
 Release-gate-status: HOLD
 
 Qualified-review-status: HOLD
@@ -159,7 +165,7 @@ fail-closed behavior prevents the one-file transaction from leaving a mixed
 runtime or silently overwriting recipient-replaced Qt/PySide files.
 
 A directory-wide transaction is now implemented in
-`src/neural_extractor_v3/core/update_directory_installer.py` and locally
+`src/openfetch/core/update_directory_installer.py` and locally
 tested. It verifies every file of the staged one-folder release against a
 strict per-file SHA-256 directory manifest, rejects symlinks/reparse points,
 unexpected or missing files, and prohibited legacy artifacts, creates a

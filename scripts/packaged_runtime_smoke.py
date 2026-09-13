@@ -1,6 +1,6 @@
 """Supervise the packaged runtime smoke with phase-aware, fail-closed handling.
 
-The generic workflow loop launched ``NeuralExtractorV3.exe
+The generic workflow loop launched ``OpenFetch.exe
 --internal-runtime-smoke`` through ``Start-Process`` with a single 90-second
 ``WaitForExit`` and no visibility: on timeout it could not say whether one-file
 extraction stalled, a bundled runtime hung, the result JSON already existed, or

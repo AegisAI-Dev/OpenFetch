@@ -1,5 +1,5 @@
-from neural_extractor_v3.models import PlaylistMode
-from neural_extractor_v3.utils import (
+from openfetch.models import PlaylistMode
+from openfetch.utils import (
     extract_video_id,
     is_youtube_mix_url,
     is_youtube_url,

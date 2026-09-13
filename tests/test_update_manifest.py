@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from neural_extractor_v3.core.update_manifest import (
+from openfetch.core.update_manifest import (
     EXPECTED_APPLICATION_NAME,
     MANIFEST_SCHEMA_VERSION,
     MIN_UPDATE_SIZE_BYTES,
@@ -63,7 +63,7 @@ def test_valid_manifest_is_strictly_bound_to_release_and_current_version():
     manifest = parse_manifest(manifest_payload())
 
     assert manifest.release_version == "3.0.3"
-    assert manifest.asset_filename == "NeuralExtractorV3-3.0.3-windows-x64.exe"
+    assert manifest.asset_filename == "OpenFetch-3.0.3-windows-x64.exe"
     assert manifest.asset_sha256 == "a" * 64
 
 
@@ -75,12 +75,13 @@ def test_release_manifest_version_mismatch_is_rejected():
 @pytest.mark.parametrize(
     "filename",
     [
-        "NeuralExtractorV3.exe",
-        "NeuralExtractorV3-Updater.exe",
-        "NeuralExtractorV3-3.0.4-windows-x64.exe",
-        "../NeuralExtractorV3-3.0.3-windows-x64.exe",
-        r"folder\NeuralExtractorV3-3.0.3-windows-x64.exe",
-        "NeuralExtractorV3-3.0.3-windows-x64.exe/extra",
+        "OpenFetch.exe",
+        "OpenFetch-Updater.exe",
+        "NeuralExtractorV3-3.0.3-windows-x64.exe",
+        "OpenFetch-3.0.4-windows-x64.exe",
+        "../OpenFetch-3.0.3-windows-x64.exe",
+        r"folder\OpenFetch-3.0.3-windows-x64.exe",
+        "OpenFetch-3.0.3-windows-x64.exe/extra",
     ],
 )
 def test_unversioned_similar_and_path_traversal_assets_are_rejected(filename):

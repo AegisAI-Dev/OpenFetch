@@ -1,4 +1,10 @@
-# Neural Extractor V3 — One-Folder Distribution (3.0.8)
+# OpenFetch — One-Folder Distribution (3.0.8)
+
+> OpenFetch is the renamed Neural Extractor V3. Version-specific evidence in this
+> document was recorded for the audited Neural Extractor V3.0.8 candidate; artifact
+> and path names that begin with `NeuralExtractorV3` refer to that audited build and
+> must be regenerated for an OpenFetch public candidate.
+
 
 Status: NON-PUBLIC TECHNICAL RELEASE CANDIDATE. Public-distribution verdict: HOLD.
 This build must not be published or redistributed until the release gate and
@@ -6,7 +12,7 @@ qualified legal review record PASS.
 
 ## What this is
 
-Neural Extractor V3 packaged as a Windows x64 one-folder application. All
+OpenFetch packaged as a Windows x64 one-folder application. All
 shared libraries, the Qt/PySide GUI runtime, and the bundled tools live as
 plain files beside the launcher so recipients can inspect and — for the
 LGPL-licensed Qt/PySide libraries — replace them (see

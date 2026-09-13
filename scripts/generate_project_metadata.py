@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import re
@@ -13,6 +14,10 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = PROJECT_ROOT / "PROJECT-METADATA.json"
 PUBLIC_ATTRIBUTION = "0xRootNull"
+PROJECT_NAME = "OpenFetch"
+FORMER_PROJECT_NAME = "Neural Extractor"
+# Brand shown as publisher; it is not a registered company or legal entity.
+PUBLIC_BRAND = "Brainbyte"
 COPYRIGHT_PERIOD = "2025-2026"
 
 STANDARD_MIT_LICENSE = """MIT License
@@ -39,7 +44,9 @@ SOFTWARE.
 """
 
 DECLARATION_FIELDS = {
-    "Project": "Neural Extractor",
+    "Project": PROJECT_NAME,
+    "Former project name": FORMER_PROJECT_NAME,
+    "Public brand": PUBLIC_BRAND,
     "Public author and copyright holder": PUBLIC_ATTRIBUTION,
     "Public attribution": PUBLIC_ATTRIBUTION,
     "Development started": "2025",
@@ -75,6 +82,18 @@ SOURCE_PATHS = (
     "pyproject.toml",
     "version_info.txt",
 )
+
+
+def application_version(root: Path) -> str:
+    config_path = root / "src" / "openfetch" / "config.py"
+    tree = ast.parse(config_path.read_text(encoding="utf-8"), filename=str(config_path))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "VERSION" for target in node.targets
+        ):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                return node.value.value
+    raise ValueError("VERSION was not found as a string constant in config.py")
 
 
 def sha256_file(path: Path) -> str:
@@ -127,17 +146,18 @@ def validate_sources(root: Path) -> None:
 
     version_info = (root / "version_info.txt").read_text(encoding="utf-8")
     for marker in (
-        'StringStruct("CompanyName", "0xRootNull")',
+        f'StringStruct("CompanyName", "{PUBLIC_BRAND}")',
         '"Copyright (c) 2025-2026 0xRootNull"',
-        'StringStruct("ProductVersion", "3.0.8")',
+        f'StringStruct("ProductVersion", "{application_version(root)}")',
     ):
         if marker not in version_info:
             raise ValueError(f"version_info.txt lacks required metadata: {marker}")
 
-    prohibited = "Neuralshield & " + PUBLIC_ATTRIBUTION
+    prohibited = ("Neuralshield & " + PUBLIC_ATTRIBUTION, PUBLIC_BRAND + " & " + PUBLIC_ATTRIBUTION)
     for relative in SOURCE_PATHS:
-        if prohibited in (root / relative).read_text(encoding="utf-8"):
-            raise ValueError(f"obsolete combined attribution remains in {relative}")
+        text = (root / relative).read_text(encoding="utf-8")
+        if any(combined in text for combined in prohibited):
+            raise ValueError(f"combined brand/copyright attribution remains in {relative}")
 
 
 def inventory(root: Path = PROJECT_ROOT) -> dict[str, Any]:
@@ -151,8 +171,10 @@ def inventory(root: Path = PROJECT_ROOT) -> dict[str, Any]:
     ]
     return {
         "schema_version": 1,
-        "project": "Neural Extractor",
-        "application_version": "3.0.8",
+        "project": PROJECT_NAME,
+        "former_project_name": FORMER_PROJECT_NAME,
+        "public_brand": PUBLIC_BRAND,
+        "application_version": application_version(root),
         "public_author_and_copyright_holder": PUBLIC_ATTRIBUTION,
         "public_attribution": PUBLIC_ATTRIBUTION,
         "development_started": 2025,

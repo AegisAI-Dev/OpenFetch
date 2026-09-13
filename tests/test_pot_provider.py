@@ -10,8 +10,8 @@ from types import SimpleNamespace
 import pytest
 from yt_dlp.extractor.youtube.pot.provider import PoTokenContext, PoTokenRequest
 
-from neural_extractor_v3.core import pot_provider as provider_module
-from neural_extractor_v3.core.pot_provider import (
+from openfetch.core import pot_provider as provider_module
+from openfetch.core.pot_provider import (
     HELPER_ID,
     PROTOCOL_NAME,
     PROTOCOL_VERSION,
@@ -26,7 +26,7 @@ from neural_extractor_v3.core.pot_provider import (
     redact_po_token_material,
     verify_helper_package,
 )
-from neural_extractor_v3.core.process_control import (
+from openfetch.core.process_control import (
     ProcessOutcome,
     ProcessResult,
     ProcessTotalTimeoutError,

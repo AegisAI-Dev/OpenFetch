@@ -16,6 +16,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.project_identity import (
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_SPEC_NAME,
+    )
+except ModuleNotFoundError:  # executed directly as scripts/verify_distribution_closure.py
+    from project_identity import (  # type: ignore[no-redef]
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_SPEC_NAME,
+    )
+
 # Legacy bundled-provider V3.0.8 and legacy V3.0.4 one-file EXE hashes.
 PROHIBITED_LEGACY_SHA256S = frozenset(
     {
@@ -44,12 +57,12 @@ class Component:
 COMPONENTS: dict[str, Component] = {
     "project": Component(
         "project",
-        "3.0.8",
+        APPLICATION_VERSION,
         "MIT for project-owned portions; Copyright (c) 2025-2026 0xRootNull",
         (
             "src",
             "main.py",
-            "NeuralExtractorV3.spec",
+            ONEFOLDER_SPEC_NAME,
             "PROJECT-METADATA.json",
             "docs/PROJECT-OWNERSHIP-DECLARATION.md",
         ),
@@ -122,7 +135,7 @@ COMPONENTS: dict[str, Component] = {
     ),
     "compliance-material": Component(
         "compliance-material",
-        "3.0.8 compliance candidate",
+        f"{APPLICATION_VERSION} compliance candidate",
         "Documentation and unchanged third-party license terms",
         ("docs", "licenses", "THIRD_PARTY_LICENSES.txt", "THIRD_PARTY_NOTICES.md"),
     ),
@@ -190,7 +203,7 @@ def classify(relative: str) -> tuple[str, ...]:
         "source-hashes.sha256",
     }:
         return ("compliance-material",)
-    if name == "neuralextractorv3.exe":
+    if name == EXECUTABLE_NAME.casefold():
         return ("project", "pyinstaller", "cpython-runtime", "python-package")
     if "bin" in parts and name == "node.exe":
         return ("node",)
@@ -364,7 +377,7 @@ def audit_distribution(distribution: Path, project_root: Path) -> dict[str, Any]
     closure_pass = technical_pass and evidence_pass and review_pass
     return {
         "schema_version": 1,
-        "application_version": "3.0.8",
+        "application_version": APPLICATION_VERSION,
         "distribution_format": "windows-one-folder",
         "public_distribution_verdict": "PASS" if closure_pass else "HOLD",
         "closure_status": "PASS" if closure_pass else "HOLD",

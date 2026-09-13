@@ -283,7 +283,7 @@ sdist = {{ url = "https://example.invalid/{name}.tar.gz", hash = "sha256:{'0' * 
     compliance_lines = "\n".join(
         f'    project_root / "{path.name}",' for path in boundary.REQUIRED_COMPLIANCE_FILES
     )
-    (root / "NeuralExtractorV3.spec").write_text(
+    (root / "OpenFetch.spec").write_text(
         f'''project_root = Path.cwd()
 python_libffi = Path(sys.base_prefix) / "DLLs" / "libffi-8.dll"
 if (project_root / "vendor" / "bgutil-ytdlp-pot-provider").exists():
@@ -367,7 +367,7 @@ def test_distribution_boundary_rejects_provider_tree_and_spec_payload(tmp_path):
     _write_valid_project(tmp_path)
     provider_root = tmp_path / boundary.PROVIDER_VENDOR_PATH
     provider_root.mkdir(parents=True)
-    spec = tmp_path / "NeuralExtractorV3.spec"
+    spec = tmp_path / "OpenFetch.spec"
     spec.write_text(
         spec.read_text(encoding="utf-8").replace(
             "hiddenimports=[]", 'hiddenimports=["yt_dlp_plugins.extractor.getpot_bgutil"]'
@@ -453,13 +453,13 @@ def _write_onefolder_directory_manifest(tree: Path, manifest_path: Path) -> None
         _json.dumps(
             {
                 "schema_version": 1,
-                "application_name": "Neural Extractor V3",
-                "release_version": "3.0.8",
+                "application_name": packaged.APP_NAME,
+                "release_version": packaged.APPLICATION_VERSION,
                 "platform": "windows",
                 "architecture": "x64",
                 "channel": "stable",
                 "root_name": packaged.ONEFOLDER_ROOT_NAME,
-                "executable": "NeuralExtractorV3.exe",
+                "executable": packaged.ONEFOLDER_LAUNCHER_PATH,
                 "total_size": sum(record["size"] for record in files.values()),
                 "files": files,
                 "replaceable_paths": replaceable,
@@ -476,7 +476,7 @@ def _valid_onefolder_tree(
 
     tree = tmp_path / packaged.ONEFOLDER_ROOT_NAME
     tree.mkdir()
-    (tree / "NeuralExtractorV3.exe").write_bytes(b"\x90" * (1024 * 1024 + 64))
+    (tree / packaged.ONEFOLDER_LAUNCHER_PATH).write_bytes(b"\x90" * (1024 * 1024 + 64))
     (tree / "bin").mkdir()
     for name in ("node.exe", "ffmpeg.exe", "ffprobe.exe"):
         (tree / "bin" / name).write_bytes(f"tool:{name}".encode())
@@ -511,7 +511,7 @@ def _valid_onefolder_tree(
         }
     ).encode()
     (tree / "QT-PYSIDE-COMPONENTS.json").write_bytes(qt_manifest)
-    metadata = b'{"application_version": "3.0.8"}'
+    metadata = b'{"application_version": "3.1.0"}'
     (tree / "PROJECT-METADATA.json").write_bytes(metadata)
     (tree / "README.md").write_text("install instructions", encoding="utf-8")
     (tree / "LICENSE").write_text("MIT", encoding="utf-8")
@@ -567,7 +567,7 @@ def test_onefolder_verifier_accepts_valid_zip(tmp_path, monkeypatch):
     import zipfile as _zipfile
 
     tree, manifest = _valid_onefolder_tree(tmp_path, monkeypatch)
-    archive = tmp_path / "NeuralExtractorV3-3.0.8-windows-x64.zip"
+    archive = tmp_path / f"{packaged.ONEFOLDER_ROOT_NAME}.zip"
     with _zipfile.ZipFile(archive, "w") as handle:
         for item in sorted(tree.rglob("*")):
             if item.is_file():
@@ -729,3 +729,32 @@ def test_onefolder_verifier_rejects_runtime_state(tmp_path, monkeypatch):
         "runtime state must not ship in the release tree: cookies.txt" in e
         for e in errors
     )
+
+
+def test_boundary_accepts_the_projects_dynamic_version_lock_entry(tmp_path):
+    """The project's own uv.lock entry has no version: it comes from config.py."""
+    _write_valid_project(tmp_path)
+    lock = tmp_path / "uv.lock"
+    lock.write_text(
+        lock.read_text(encoding="utf-8")
+        + '\n[[package]]\nname = "openfetch"\nsource = { editable = "." }\n',
+        encoding="utf-8",
+    )
+
+    errors = boundary.verify_project(tmp_path)
+
+    assert not any("missing a name or version" in error for error in errors)
+
+
+def test_boundary_still_rejects_a_registry_package_without_a_version(tmp_path):
+    _write_valid_project(tmp_path)
+    lock = tmp_path / "uv.lock"
+    lock.write_text(
+        lock.read_text(encoding="utf-8")
+        + '\n[[package]]\nname = "mystery"\nsource = { registry = "https://example.invalid/simple" }\n',
+        encoding="utf-8",
+    )
+
+    errors = boundary.verify_project(tmp_path)
+
+    assert any("missing a name or version" in error for error in errors)

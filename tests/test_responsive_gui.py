@@ -9,16 +9,16 @@ import pytest
 from PySide6.QtCore import QRect, QSettings, QSize
 from PySide6.QtWidgets import QApplication, QFileDialog
 
-from neural_extractor_v3.core import youtube_connection as connection_module
-from neural_extractor_v3.core.pot_provider import PoTokenProviderStatus
-from neural_extractor_v3.core.youtube_connection import (
+from openfetch.core import youtube_connection as connection_module
+from openfetch.core.pot_provider import PoTokenProviderStatus
+from openfetch.core.youtube_connection import (
     ChromeDiscovery,
     ManagedBrowser,
     YouTubeConnectionManager,
 )
-from neural_extractor_v3.gui import main_window as gui_module
-from neural_extractor_v3.gui.managed_browser_dialog import YouTubeConnectionDialog
-from neural_extractor_v3.gui.responsive_layout import (
+from openfetch.gui import main_window as gui_module
+from openfetch.gui.managed_browser_dialog import YouTubeConnectionDialog
+from openfetch.gui.responsive_layout import (
     clamp_splitter_sizes,
     clamp_window_rect,
     logical_viewport_size,
@@ -175,7 +175,7 @@ def test_managed_browser_wizard_is_resizable_scrollable_and_actions_remain_reach
     manager = YouTubeConnectionManager(
         settings,
         browser=ManagedBrowser.CHROME,
-        application_data=tmp_path / "LocalAppData" / "NeuralExtractorV3",
+        application_data=tmp_path / "LocalAppData" / "OpenFetch",
         discovery=ChromeDiscovery(
             registry_reader=lambda: [],
             environ={},

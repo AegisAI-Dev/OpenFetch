@@ -5,8 +5,8 @@ from types import SimpleNamespace
 import pytest
 from PySide6.QtWidgets import QApplication
 
-from neural_extractor_v3.gui import main_window as gui_module
-from neural_extractor_v3.models import DownloadJob, DownloadOptions
+from openfetch.gui import main_window as gui_module
+from openfetch.models import DownloadJob, DownloadOptions
 
 
 def test_cancel_marks_current_and_unstarted_jobs_and_a_new_worker_can_run(

@@ -1,0 +1,584 @@
+name: Owner-Authorized OpenFetch One-File Release
+
+# Manually dispatched release of the traditional one-file Windows executable
+# that the automatic updater installs.
+#
+# It replaces the former single-version family bridge workflow, which could not
+# publish any later version and therefore left installed builds without a
+# reachable update. The version is no longer hardcoded: it must equal the source
+# version, and the owner must type the exact confirmation phrase for it.
+#
+# This repository (AegisAI-Dev/OpenFetch) is the canonical OpenFetch release
+# feed and receives the OpenFetch asset family.
+#
+# Installed Neural Extractor V3 updaters (3.0.x) are pinned to the
+# pre-rename slug AegisAI-Dev/NeuralExtractor, call the API without following
+# redirects, and require exact asset URLs under that slug. They are served by a
+# separate owner-controlled bridge repository with that exact name. This
+# workflow therefore also builds the legacy-named asset family from the SAME
+# executable and uploads it as a workflow artifact, together with the exact
+# command the owner runs to publish the bridge release. Nothing is published
+# cross-repository automatically. See docs/OPENFETCH-MIGRATION.md.
+#
+# This workflow is an explicitly owner-authorized path. It does NOT assert public
+# distribution compliance, it does NOT claim qualified legal review occurred,
+# and it never edits a HOLD document. The general compliance status remains
+# HOLD. The compliance-gated production workflow
+# (.github/workflows/build-release.yml) remains fail-closed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact numeric version equal to the source version, for example 3.1.0"
+        required: true
+        type: string
+      confirmation:
+        description: "Exactly PUBLISH-OPENFETCH-<version>, for example PUBLISH-OPENFETCH-3.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_VERSION: ${{ github.event.inputs.version }}
+  RELEASE_TAG: v${{ github.event.inputs.version }}
+  RELEASE_CONFIRMATION: ${{ github.event.inputs.confirmation }}
+  RELEASE_CONFIRMATION_PREFIX: "PUBLISH-OPENFETCH-"
+  BRIDGE_REPOSITORY: "AegisAI-Dev/NeuralExtractor"
+  OPENFETCH_MINIMUM_UPDATER_VERSION: "3.1.0"
+  LEGACY_MINIMUM_UPDATER_VERSION: "3.0.4"
+  PROHIBITED_LEGACY_SHA256_A: "0d4d4bdf1eabf5af88c1094732ae28cf55f12a0dc36377d90088eb54537b82ac"
+  PROHIBITED_LEGACY_SHA256_B: "02fbde8845bcb7b8946a44f320aa1f88a63a70ceac9765f800276ce11bfa6ed7"
+
+jobs:
+  onefile-release:
+    name: Build and publish the OpenFetch one-file release
+    runs-on: windows-latest
+
+    steps:
+      - name: Announce release scope
+        shell: pwsh
+        run: |
+          Write-Host "::warning::Owner-authorized OpenFetch one-file release. General compliance status remains HOLD."
+          Write-Host "Owner-authorized OpenFetch one-file release. General compliance status remains HOLD."
+
+      - name: Validate release inputs
+        shell: pwsh
+        run: |
+          # Inputs are read from the environment, never interpolated into script text.
+          $version = $env:RELEASE_VERSION
+          $confirmation = $env:RELEASE_CONFIRMATION
+          if ($version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+            Write-Error "Release version must be an exact numeric X.Y.Z value; got '$version'."
+            exit 1
+          }
+          $expectedConfirmation = "$($env:RELEASE_CONFIRMATION_PREFIX)$version"
+          if ($confirmation -ne $expectedConfirmation) {
+            Write-Error "The release requires the exact confirmation phrase $expectedConfirmation."
+            exit 1
+          }
+          if ("${{ github.ref_name }}" -ne "${{ github.event.repository.default_branch }}") {
+            Write-Error "The one-file release must run from the repository default branch."
+            exit 1
+          }
+          Write-Host "Release inputs accepted for version $version."
+
+      - name: Configure byte-stable Git checkout
+        shell: pwsh
+        run: |
+          # Every SHA-256 manifest in this repository records committed bytes, so
+          # the checkout must not rewrite line endings. This must run BEFORE
+          # actions/checkout, otherwise the working tree arrives as CRLF on
+          # Windows and SOURCE-HASHES.sha256, the hashed license manifest and
+          # PROJECT-METADATA.json all mismatch. See .gitattributes for the
+          # canonical per-path policy.
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          $autocrlf = git config --global --get core.autocrlf
+          $eol = git config --global --get core.eol
+          Write-Host "core.autocrlf=$autocrlf"
+          Write-Host "core.eol=$eol"
+          if ($autocrlf -ne "false" -or $eol -ne "lf") {
+            Write-Error "Byte-stable Git configuration was not applied before checkout."
+            exit 1
+          }
+
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Require a new release tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = process.env.RELEASE_TAG;
+            try {
+              await github.rest.git.getRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`,
+              });
+              core.setFailed(`Tag ${tag} already exists. The release refuses to overwrite or reuse a published tag.`);
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              core.info(`Tag ${tag} does not exist yet.`);
+            }
+
+      - name: Stage pinned CPython runtime
+        shell: pwsh
+        run: |
+          $asset = "cpython-3.12.9+20250317-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+          $expectedSha256 = "ee338839315bdd8af5fc935f9595eca20ebebdd250726c5816b2d0cf94d1e661"
+          $archive = Join-Path $env:RUNNER_TEMP $asset
+          $runtime = Join-Path $env:RUNNER_TEMP "openfetch-python-3.12.9-20250317"
+          $url = "https://github.com/astral-sh/python-build-standalone/releases/download/20250317/$asset"
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actualSha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualSha256 -ne $expectedSha256) {
+            Write-Error "Pinned CPython archive checksum mismatch."
+            exit 1
+          }
+          New-Item -ItemType Directory -Path $runtime -Force | Out-Null
+          tar -xzf $archive -C $runtime
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $python = Join-Path $runtime "python\python.exe"
+          if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+            Write-Error "Pinned CPython archive layout changed."
+            exit 1
+          }
+          "PYTHON_EXE=$python" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Set up Node.js runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.17.0"
+
+      - name: Confirm source version matches the requested release
+        shell: pwsh
+        run: |
+          & $env:PYTHON_EXE scripts/release_tools.py validate --release-ref $env:RELEASE_TAG
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Install locked dependencies
+        shell: pwsh
+        run: |
+          & $env:PYTHON_EXE -m ensurepip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $env:PYTHON_EXE -m pip install --require-hashes --only-binary=:all: -r requirements.lock
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $env:PYTHON_EXE -m pip check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Stage pinned Node, FFmpeg and ffprobe
+        shell: pwsh
+        run: |
+          $ffmpegVersion = "autobuild-2026-06-30-13-34"
+          $ffmpegAsset = "ffmpeg-N-125365-g9a01c1cb6a-win64-gpl.zip"
+          $ffmpegSha256 = "52c0383c460f0ec1039088f1591921fb82e3b870b32aab8faf2ff1e5ae14bf9d"
+          $archive = Join-Path $env:RUNNER_TEMP $ffmpegAsset
+          $expanded = Join-Path $env:RUNNER_TEMP "openfetch-ffmpeg"
+          $url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/$ffmpegVersion/$ffmpegAsset"
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actualSha256 = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualSha256 -ne $ffmpegSha256) {
+            Write-Error "Pinned FFmpeg archive checksum mismatch."
+            exit 1
+          }
+          Expand-Archive -Path $archive -DestinationPath $expanded -Force
+          $ffmpeg = @(Get-ChildItem $expanded -Recurse -File -Filter ffmpeg.exe)
+          $ffprobe = @(Get-ChildItem $expanded -Recurse -File -Filter ffprobe.exe)
+          if ($ffmpeg.Count -ne 1 -or $ffprobe.Count -ne 1) {
+            Write-Error "Pinned FFmpeg archive did not contain exactly one ffmpeg.exe and ffprobe.exe."
+            exit 1
+          }
+          New-Item -ItemType Directory -Path bin -Force | Out-Null
+          Copy-Item $ffmpeg[0].FullName bin\ffmpeg.exe -Force
+          Copy-Item $ffprobe[0].FullName bin\ffprobe.exe -Force
+          $node = (Get-Command node.exe -ErrorAction Stop).Source
+          Copy-Item $node bin\node.exe -Force
+          & bin\node.exe --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin\ffmpeg.exe -version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin\ffprobe.exe -version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Reconstruct and verify pinned offline build inputs
+        shell: pwsh
+        run: |
+          # build_inputs/ payloads are deliberately not committed, but
+          # SOURCE-HASHES.sha256 covers them, so a clean checkout must rebuild
+          # them before the packaging-contract tests run. The pinned CPython and
+          # FFmpeg archives were already downloaded and SHA-256 verified in
+          # earlier steps, so reuse those exact bytes from RUNNER_TEMP instead of
+          # downloading ~188 MB a second time; a reused copy is accepted only
+          # when its SHA-256 matches the pinned value.
+          & $env:PYTHON_EXE scripts/restore_build_inputs.py --reuse-dir $env:RUNNER_TEMP
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Independent second pass: every pinned payload must now be present and
+          # byte-exact without any download or copy being permitted.
+          & $env:PYTHON_EXE scripts/restore_build_inputs.py --verify-only
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Validate source, tests and manifests
+        shell: pwsh
+        run: |
+          & $env:PYTHON_EXE -m ruff check src tests scripts main.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $env:PYTHON_EXE -m compileall -q src scripts main.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:PYTHONPATH = "$PWD\src"
+          & $env:PYTHON_EXE -m pytest tests -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $env:PYTHON_EXE scripts/generate_project_metadata.py --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $env:PYTHON_EXE scripts/generate_compliance_manifests.py --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $env:PYTHON_EXE scripts/verify_distribution_boundary.py .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build the one-file OpenFetch EXE
+        shell: pwsh
+        run: |
+          if (Test-Path dist) { Remove-Item dist -Recurse -Force }
+          $env:PYTHONHASHSEED = "0"
+          $env:SOURCE_DATE_EPOCH = "0"
+          & $env:PYTHON_EXE -m PyInstaller OpenFetch-onefile.spec --clean --noconfirm
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path -LiteralPath "dist\OpenFetch.exe" -PathType Leaf)) {
+            Write-Error "The one-file executable was not produced."
+            exit 1
+          }
+          $stray = @(Get-ChildItem dist -Force | Where-Object { $_.Name -ne "OpenFetch.exe" })
+          if ($stray.Count -ne 0) {
+            Write-Error "The one-file build produced unexpected dist entries: $($stray.Name -join ', ')"
+            exit 1
+          }
+
+      - name: Confirm packaged version
+        shell: pwsh
+        run: |
+          # The application is a windowed (GUI subsystem) binary. PowerShell does
+          # not wait for such a process when it is invoked directly, so `& exe`
+          # yields no output and no exit code. Start-Process with -Wait and an
+          # explicit stdout redirect both waits and captures the text.
+          $stdout = Join-Path $env:RUNNER_TEMP "openfetch-release-version.txt"
+          Remove-Item -LiteralPath $stdout -ErrorAction SilentlyContinue
+          $process = Start-Process -FilePath "dist\OpenFetch.exe" `
+            -ArgumentList "--version" -Wait -PassThru -WindowStyle Hidden `
+            -RedirectStandardOutput $stdout
+          if ($process.ExitCode -ne 0) {
+            Write-Error "Packaged --version failed with exit code $($process.ExitCode)."
+            exit 1
+          }
+          if (-not (Test-Path -LiteralPath $stdout -PathType Leaf)) {
+            Write-Error "Packaged --version produced no output."
+            exit 1
+          }
+          $text = (Get-Content -Raw -LiteralPath $stdout).Trim()
+          $expected = "OpenFetch $($env:RELEASE_VERSION)"
+          if ($text -ne $expected) {
+            Write-Error "Packaged version reported '$text'; expected '$expected'."
+            exit 1
+          }
+          Write-Host "Packaged version confirmed: $text"
+
+      - name: Run packaged runtime smoke
+        shell: pwsh
+        run: |
+          # Dedicated phase-aware harness instead of the generic 90s WaitForExit:
+          # it distinguishes startup (one-file extraction/import), checks, and
+          # post-result exit, collects trace/process-tree diagnostics before any
+          # kill, and fails closed. Budgets are per phase and evidence-based:
+          # warm local runs measure ~9s startup / ~11s total / ~0.5s exit lag,
+          # and CI first launches additionally pay Defender scans of the fresh
+          # 190 MB EXE and the three 85-143 MB extracted tools (bounded at 15s
+          # per tool inside the app), so each phase gets generous but bounded
+          # headroom rather than one opaque timeout.
+          & $env:PYTHON_EXE scripts/packaged_runtime_smoke.py --executable "dist\OpenFetch.exe" --startup-timeout 240 --check-timeout 120 --exit-grace 60
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run packaged GUI, Unicode and provider smokes
+        shell: pwsh
+        run: |
+          foreach ($smoke in @(
+            @{ Name = "gui-offscreen"; Argument = "--internal-gui-startup-smoke" },
+            @{ Name = "gui-windows"; Argument = "--internal-windows-gui-smoke" },
+            @{ Name = "provider-boundary"; Argument = "--internal-provider-media-smoke" },
+            @{ Name = "youtube-connection"; Argument = "--internal-youtube-connection-smoke" }
+          )) {
+            # The result path MUST live under the process temp directory that
+            # the packaged app itself resolves (Python's tempfile.gettempdir(),
+            # i.e. TEMP). RUNNER_TEMP is a different location on GitHub's
+            # Windows runners, and the app rejects a result path outside its
+            # temp root — which, in a windowed EXE, surfaced as an indefinite
+            # hang rather than an error. Use the real TEMP.
+            $result = Join-Path ([System.IO.Path]::GetTempPath()) "openfetch-release-$($smoke.Name)-smoke.json"
+            $arguments = "$($smoke.Argument) `"$result`""
+            $process = Start-Process -FilePath "dist\OpenFetch.exe" -ArgumentList $arguments -PassThru -WindowStyle Hidden
+            if (-not $process.WaitForExit(90000)) {
+              & "$env:SystemRoot\System32\taskkill.exe" /PID $process.Id /T /F | Out-Null
+              Write-Error "Packaged $($smoke.Name) smoke timed out; its process tree was terminated."
+              exit 1
+            }
+            if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $result -PathType Leaf)) {
+              Write-Error "Packaged $($smoke.Name) smoke failed."
+              exit 1
+            }
+            $payload = Get-Content -Raw -LiteralPath $result | ConvertFrom-Json
+            if ($payload.passed -ne $true) {
+              Write-Error "Packaged $($smoke.Name) smoke reported a failed check."
+              exit 1
+            }
+            Write-Host "Packaged $($smoke.Name) smoke passed."
+          }
+          $env:PYTHONPATH = "$PWD\src"
+          & $env:PYTHON_EXE scripts/packaged_worker_protocol_smoke.py "dist\OpenFetch.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $env:PYTHON_EXE scripts/packaged_youtube_connection_smoke.py "dist\OpenFetch.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run simulated previous-version updater handoff and rollback smoke
+        shell: pwsh
+        run: |
+          # The simulated previous install is a byte-distinct copy of the same
+          # packaged build; the smoke drives the real one-file updater handoff,
+          # startup confirmation, concurrency rejection and rollback paths.
+          #
+          # Everything must live under a very short EXTERNAL root, never under
+          # the checkout and never under TEMP/TMP/RUNNER_TEMP:
+          #   * the updater fail-closes when the install target resolves inside
+          #     tempfile.gettempdir(), which rules out the temporary roots;
+          #   * below the checkout (D:\a\<repo>\<repo>\...) the generated
+          #     detached-helper path exceeds MAX_PATH — the smoke nests a
+          #     64-char target identity plus a 48-char transaction id under
+          #     local-app-data\OpenFetch\updater-helper — so CreateProcess
+          #     rejects lpApplicationName with WinError 206 ("filename or
+          #     extension is too long") before the helper starts.
+          # The harness selects the shortest writable fixed-drive root (for
+          # example D:\neu) and fails closed if none qualifies; it also
+          # preflights every generated path and the detached command line.
+          $env:PYTHONPATH = "$PWD\src"
+          $root = & $env:PYTHON_EXE scripts/packaged_updater_smoke.py --print-selected-root --project-root "$PWD"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $root = $root.Trim()
+          Write-Host "updater-smoke external root: $root ($($root.Length) chars)"
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          $previous = Join-Path $root "o.exe"
+          $payload = Join-Path $root "n.exe"
+          $workspace = Join-Path $root "w"
+          Copy-Item "dist\OpenFetch.exe" $payload -Force
+          Copy-Item "dist\OpenFetch.exe" $previous -Force
+          Add-Content -LiteralPath $previous -Value "openfetch-simulated-previous-version-marker" -Encoding Ascii
+          $newHash = (Get-FileHash $payload -Algorithm SHA256).Hash
+          $oldHash = (Get-FileHash $previous -Algorithm SHA256).Hash
+          if ($newHash -eq $oldHash) {
+            Write-Error "The simulated previous package must differ from the release payload."
+            exit 1
+          }
+          Write-Host "updater-smoke workspace: $workspace ($($workspace.Length) chars)"
+          & $env:PYTHON_EXE scripts/packaged_updater_smoke.py --old-package $previous --new-package $payload --workspace $workspace --project-root "$PWD" --scenario all
+          $smokeExit = $LASTEXITCODE
+          Remove-Item -LiteralPath $payload, $previous -Force -ErrorAction SilentlyContinue
+          if ($smokeExit -eq 0) {
+            Remove-Item -LiteralPath $workspace -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          if ($smokeExit -ne 0) { exit $smokeExit }
+
+      - name: Scan the packaged EXE for PyQt6 and provider payloads
+        shell: pwsh
+        run: |
+          # PyInstaller lives in the pinned CPython runtime behind $env:PYTHON_EXE
+          # and its Scripts directory is not on the Actions PATH, so the bare
+          # `pyi-archive_viewer` console script is not resolvable. Invoke the
+          # module through the pinned interpreter: that also guarantees the scan
+          # uses exactly the PyInstaller installation that produced this EXE.
+          #
+          # `-l` lists the CArchive table of contents, which is what these checks
+          # need (bin\node.exe, bin\ffmpeg.exe, bin\ffprobe.exe). The embedded PYZ
+          # appears as a single 'z' entry; its module names are inspected by
+          # verify_packaged_licensing.py --bridge-boundary below, which opens the
+          # PYZ directly, so recursive listing (-r) is not required here.
+          $archiveLines = & $env:PYTHON_EXE -m PyInstaller.utils.cliutils.archive_viewer -l "dist\OpenFetch.exe"
+          $archiveExit = $LASTEXITCODE
+          if ($archiveExit -ne 0) {
+            Write-Error "Packaged archive listing failed with exit code $archiveExit; PyInstaller.utils.cliutils.archive_viewer could not import or read dist\OpenFetch.exe."
+            exit 1
+          }
+          $archiveListing = ($archiveLines | Out-String)
+          if ([string]::IsNullOrWhiteSpace($archiveListing)) {
+            Write-Error "Packaged archive listing was empty; the boundary scan cannot be trusted."
+            exit 1
+          }
+          # The listing renders Python reprs, so archive paths carry doubled
+          # backslashes; these literals match that form exactly.
+          foreach ($runtime in @("bin\\node.exe", "bin\\ffmpeg.exe", "bin\\ffprobe.exe")) {
+            if (-not ($archiveListing -match [regex]::Escape($runtime))) {
+              Write-Error "Packaged runtime is missing: $runtime"
+              exit 1
+            }
+          }
+          # One-file boundary scan: same audited payload checks as the compliance
+          # path (no PyQt, no provider/JS/canvas payload, exact audited Qt/PySide
+          # paths, pinned CPython libffi/_ctypes, required notices and hashed
+          # license/source manifests) minus the distribution-inventory
+          # fingerprint, which is bound to one historical artifact and therefore
+          # cannot describe a freshly built EXE. This asserts no compliance
+          # status; the public verdict remains HOLD.
+          & $env:PYTHON_EXE scripts/verify_packaged_licensing.py "dist\OpenFetch.exe" --bridge-boundary
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Scan outputs for prohibited legacy hashes
+        shell: pwsh
+        run: |
+          $prohibited = @($env:PROHIBITED_LEGACY_SHA256_A, $env:PROHIBITED_LEGACY_SHA256_B)
+          $roots = @("dist", "build") | Where-Object { Test-Path -LiteralPath $_ }
+          $violations = @()
+          foreach ($root in $roots) {
+            foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -File -Force) {
+              $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+              if ($prohibited -contains $hash) {
+                $violations += "$($file.FullName) [$hash]"
+              }
+            }
+          }
+          if ($violations.Count -gt 0) {
+            $violations | ForEach-Object { Write-Host "::error::Prohibited legacy artifact detected: $_" }
+            Write-Error "Prohibited legacy one-file artifacts must never be built or published."
+            exit 1
+          }
+          Write-Host "No prohibited legacy artifact hash is present in build or dist outputs."
+
+      - name: Generate OpenFetch and legacy-compatible updater assets
+        shell: pwsh
+        run: |
+          $version = $env:RELEASE_VERSION
+          $exe = "dist\OpenFetch.exe"
+          $families = @(
+            @{ Naming = "openfetch"; Prefix = "OpenFetch"; Minimum = $env:OPENFETCH_MINIMUM_UPDATER_VERSION },
+            @{ Naming = "legacy"; Prefix = "NeuralExtractorV3"; Minimum = $env:LEGACY_MINIMUM_UPDATER_VERSION }
+          )
+          foreach ($family in $families) {
+            $versioned = "dist\$($family.Prefix)-$version-windows-x64.exe"
+            $manifest = "dist\$($family.Prefix)-$version-manifest.json"
+            Copy-Item $exe $versioned -Force
+            & $env:PYTHON_EXE scripts/verify_packaged_licensing.py $versioned --bridge-boundary
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Get-FileHash $versioned -Algorithm SHA256 |
+              ForEach-Object { "$($_.Hash)  $(Split-Path $versioned -Leaf)" } |
+              Set-Content "$versioned.sha256"
+            & $env:PYTHON_EXE scripts/release_tools.py manifest --naming $family.Naming --version $version --exe $versioned --output $manifest --minimum-updater-version $family.Minimum
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          $expected = @(
+            "OpenFetch.exe",
+            "OpenFetch-$version-windows-x64.exe",
+            "OpenFetch-$version-windows-x64.exe.sha256",
+            "OpenFetch-$version-manifest.json",
+            "NeuralExtractorV3-$version-windows-x64.exe",
+            "NeuralExtractorV3-$version-windows-x64.exe.sha256",
+            "NeuralExtractorV3-$version-manifest.json"
+          ) | Sort-Object
+          $actual = @(Get-ChildItem dist -File | Select-Object -ExpandProperty Name | Sort-Object)
+          if ((Compare-Object $expected $actual).Count -ne 0) {
+            Write-Error "The release must contain exactly the seven updater assets."
+            Compare-Object $expected $actual | Format-Table
+            exit 1
+          }
+
+      - name: Verify both manifests against the final EXE
+        shell: pwsh
+        run: |
+          $version = $env:RELEASE_VERSION
+          $releaseHash = (Get-FileHash -LiteralPath "dist\OpenFetch.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+          $failures = @()
+          foreach ($family in @(
+            @{ Prefix = "OpenFetch"; Application = "OpenFetch"; Minimum = $env:OPENFETCH_MINIMUM_UPDATER_VERSION },
+            @{ Prefix = "NeuralExtractorV3"; Application = "Neural Extractor V3"; Minimum = $env:LEGACY_MINIMUM_UPDATER_VERSION }
+          )) {
+            $versioned = "dist\$($family.Prefix)-$version-windows-x64.exe"
+            $manifest = "dist\$($family.Prefix)-$version-manifest.json"
+            $payload = Get-Content -Raw -LiteralPath $manifest | ConvertFrom-Json
+            $actualHash = (Get-FileHash -LiteralPath $versioned -Algorithm SHA256).Hash.ToLowerInvariant()
+            $actualSize = (Get-Item -LiteralPath $versioned).Length
+            $checksumLine = (Get-Content -LiteralPath "$versioned.sha256" -Raw).Trim()
+            $label = $family.Prefix
+            if ($actualHash -ne $releaseHash) { $failures += "${label}: versioned EXE differs from dist\OpenFetch.exe" }
+            if ($payload.schema_version -ne 1) { $failures += "${label}: schema_version must be 1" }
+            if ($payload.application_name -ne $family.Application) { $failures += "${label}: application_name mismatch" }
+            if ($payload.release_version -ne $version) { $failures += "${label}: release_version must be $version" }
+            if ($payload.asset_filename -ne "$($family.Prefix)-$version-windows-x64.exe") { $failures += "${label}: asset_filename must be the official release asset name" }
+            if ($payload.asset_sha256 -ne $actualHash) { $failures += "${label}: asset_sha256 does not match the published EXE" }
+            if ($payload.asset_size -ne $actualSize) { $failures += "${label}: asset_size does not match the published EXE" }
+            if ($payload.platform -ne "windows") { $failures += "${label}: platform must be windows" }
+            if ($payload.architecture -ne "x64") { $failures += "${label}: architecture must be x64" }
+            if ($payload.channel -ne "stable") { $failures += "${label}: channel must be stable" }
+            if ($payload.minimum_updater_version -ne $family.Minimum) { $failures += "${label}: minimum_updater_version must be $($family.Minimum)" }
+            if ($checksumLine -notmatch "^$actualHash\s+$($family.Prefix)-$([regex]::Escape($version))-windows-x64\.exe$") { $failures += "${label}: sha256 sidecar does not match the published EXE" }
+          }
+          if ($failures.Count -gt 0) {
+            $failures | ForEach-Object { Write-Host "::error::$_" }
+            Write-Error "The updater manifests do not describe the final EXE exactly."
+            exit 1
+          }
+          if (-not (Test-Path -LiteralPath "docs\release-notes\V$version.md" -PathType Leaf)) {
+            Write-Error "Release notes are missing: docs\release-notes\V$version.md"
+            exit 1
+          }
+          Write-Host "Both updater manifests verified against the final EXE."
+
+      - name: Report the legacy bridge release procedure
+        shell: pwsh
+        run: |
+          # Installed Neural Extractor updaters cannot reach this repository:
+          # they are pinned to the pre-rename slug and refuse redirects. The
+          # legacy-named assets below are built from the same executable and
+          # must be published, by the owner, in the bridge repository that keeps
+          # that exact name. This workflow never publishes cross-repository.
+          $version = $env:RELEASE_VERSION
+          Write-Host "::notice::Legacy bridge assets for $($env:BRIDGE_REPOSITORY) are in the workflow artifact."
+          Write-Host "Bridge release procedure (run with an account that owns $($env:BRIDGE_REPOSITORY)):"
+          Write-Host "  gh release create v$version ``"
+          Write-Host "    dist/NeuralExtractorV3-$version-windows-x64.exe ``"
+          Write-Host "    dist/NeuralExtractorV3-$version-windows-x64.exe.sha256 ``"
+          Write-Host "    dist/NeuralExtractorV3-$version-manifest.json ``"
+          Write-Host "    --repo $($env:BRIDGE_REPOSITORY) --title ""Neural Extractor V3 v$version"" --notes-file docs/release-notes/V$version.md --latest"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenFetch-windows-x64
+          path: |
+            dist/OpenFetch.exe
+            dist/OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe
+            dist/OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe.sha256
+            dist/OpenFetch-${{ env.RELEASE_VERSION }}-manifest.json
+            dist/NeuralExtractorV3-${{ env.RELEASE_VERSION }}-windows-x64.exe
+            dist/NeuralExtractorV3-${{ env.RELEASE_VERSION }}-windows-x64.exe.sha256
+            dist/NeuralExtractorV3-${{ env.RELEASE_VERSION }}-manifest.json
+
+      - name: Publish the stable OpenFetch release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: OpenFetch ${{ env.RELEASE_TAG }}
+          body_path: docs/release-notes/V${{ env.RELEASE_VERSION }}.md
+          draft: false
+          prerelease: false
+          make_latest: "true"
+          fail_on_unmatched_files: true
+          files: |
+            dist/OpenFetch.exe
+            dist/OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe
+            dist/OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe.sha256
+            dist/OpenFetch-${{ env.RELEASE_VERSION }}-manifest.json
+
+      - name: Restate release scope
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "::warning::Owner-authorized OpenFetch one-file release. General compliance status remains HOLD."

@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from neural_extractor_v3.config import app_data_dir
-from neural_extractor_v3.core import youtube_connection as connection_module
-from neural_extractor_v3.core import youtube_connection_smoke as smoke_module
-from neural_extractor_v3.core.youtube_connection import (
+from openfetch.config import app_data_dir
+from openfetch.core import youtube_connection as connection_module
+from openfetch.core import youtube_connection_smoke as smoke_module
+from openfetch.core.youtube_connection import (
     ACTIVE_PROVIDER_KEY,
     ConnectionState,
     FirefoxDiscovery,
@@ -21,7 +21,7 @@ from neural_extractor_v3.core.youtube_connection import (
     inspect_youtube_session_cookies,
     validate_dedicated_profile_path,
 )
-from neural_extractor_v3.core.youtube_connection_smoke import (
+from openfetch.core.youtube_connection_smoke import (
     run_offline_youtube_connection_smoke,
 )
 
@@ -76,7 +76,7 @@ def manager_for(
         application_data=(
             application_data
             if application_data is not None
-            else tmp_path / "LocalAppData" / "NeuralExtractorV3"
+            else tmp_path / "LocalAppData" / "OpenFetch"
         ),
         discovery=discovery,
         popen_factory=popen_factory or (lambda *_args, **_kwargs: FakeProcess()),
@@ -189,11 +189,11 @@ def test_mocked_windows_localappdata_root_is_used_consistently(tmp_path, monkeyp
 
     expected = (
         local_app_data
-        / "NeuralExtractorV3"
+        / "OpenFetch"
         / "youtube"
         / "firefox-profile"
     ).resolve()
-    assert application_data.resolve() == (local_app_data / "NeuralExtractorV3").resolve()
+    assert application_data.resolve() == (local_app_data / "OpenFetch").resolve()
     assert profile == expected
     assert validate_dedicated_profile_path(
         profile,
@@ -211,7 +211,7 @@ def test_windows_path_case_differences_do_not_reject_managed_profile(tmp_path):
             / "RunnerAdmin"
             / "AppData"
             / "Local"
-            / "NeuralExtractorV3"
+            / "OpenFetch"
         ),
     )
     profile = manager.create_profile()
@@ -230,7 +230,7 @@ def test_offline_smoke_accepts_canonicalized_windows_runner_temp_alias(tmp_path)
     canonical_root.mkdir()
     runner_alias = windows_short_path(canonical_root)
     raw_expected_parent = (
-        runner_alias / "LocalAppData" / "NeuralExtractorV3" / "youtube"
+        runner_alias / "LocalAppData" / "OpenFetch" / "youtube"
     )
     assert raw_expected_parent != raw_expected_parent.resolve()
 

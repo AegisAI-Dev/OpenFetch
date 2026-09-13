@@ -5,7 +5,7 @@ Bridge CI failed launching the detached update helper with
 (``D:\\a\\NeuralExtractor\\NeuralExtractor\\build\\upd-smoke\\run-...``) the
 generated helper path reaches 265 characters — a 64-character target identity
 plus a 48-character transaction id below
-``local-app-data\\NeuralExtractorV3\\updater-helper`` — so CreateProcess rejects
+``local-app-data\\NeuralExtractorV3\\updater-helper`` (now ``OpenFetch``) — so CreateProcess rejects
 ``lpApplicationName`` against MAX_PATH (260). The command line itself was only
 ~467 characters, far below the 32767 limit, so the cause is the executable path,
 not the command line.
@@ -25,7 +25,7 @@ import pytest
 from scripts import packaged_updater_smoke as smoke
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BRIDGE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-bridge-release.yml"
+BRIDGE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-onefile-release.yml"
 PRODUCTION_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "build-release.yml"
 # The exact CI checkout root that produced WinError 206.
 CI_CHECKOUT = Path(r"D:\a\NeuralExtractor\NeuralExtractor")
@@ -38,7 +38,7 @@ def bridge_workflow() -> str:
 
 def _updater_step(workflow: str) -> str:
     return workflow.split(
-        "Run simulated 3.0.7 to 3.0.8 updater handoff and rollback smoke", 1
+        "Run simulated previous-version updater handoff and rollback smoke", 1
     )[1].split("- name:", 1)[0]
 
 
@@ -174,13 +174,20 @@ def test_preflight_reports_every_required_path_measurement():
 def test_ci_layout_would_have_exceeded_max_path_but_short_root_does_not():
     """Regression guard for the exact measurement behind the CI failure."""
     failing = smoke.modelled_smoke_paths(
-        CI_CHECKOUT / "build" / "upd-smoke" / "run-57672e49"
+        CI_CHECKOUT / "build" / "upd-smoke" / "run-57672e49",
+        app_directory_name=smoke.LEGACY_APP_DIRECTORY_NAME,
     )["detached_helper_executable"]
     fixed = smoke.modelled_smoke_paths(Path(r"D:\neu\w\run-1a2b3c4d"))[
         "detached_helper_executable"
     ]
     assert len(str(failing)) > smoke.MAX_WINDOWS_PATH
     assert len(str(fixed)) <= smoke.MAX_WINDOWS_PATH
+    # The shorter OpenFetch data directory helps, but the checkout layout still
+    # exceeds the limit, so the short external root remains required.
+    still_failing = smoke.modelled_smoke_paths(
+        CI_CHECKOUT / "build" / "upd-smoke" / "run-57672e49"
+    )["detached_helper_executable"]
+    assert len(str(still_failing)) > smoke.MAX_WINDOWS_PATH - 20
 
 
 def test_winerror_206_is_converted_into_an_actionable_smoke_error():
@@ -256,7 +263,7 @@ def test_runtime_and_gui_smoke_fixes_remain_intact(bridge_workflow: str):
         "- name:", 1
     )[0]
     assert "scripts/packaged_runtime_smoke.py --executable" in runtime
-    app = (PROJECT_ROOT / "src" / "neural_extractor_v3" / "app.py").read_text(
+    app = (PROJECT_ROOT / "src" / "openfetch" / "app.py").read_text(
         encoding="utf-8"
     )
     assert "_run_internal_smoke" in app, "the windowed-EXE hang fix was lost"
@@ -271,20 +278,20 @@ def test_complete_pytest_command_and_no_workaround(bridge_workflow: str):
     for workaround in ("-k ", "--ignore", "--deselect", "-m not ", "--maxfail"):
         assert workaround not in bridge_workflow
     decorator = re.compile(r"^\s*@pytest\.mark\.(skip|skipif|xfail)\b", re.MULTILINE)
-    for name in ("test_packaged_updater_workspace.py", "test_bridge_release.py"):
+    for name in ("test_packaged_updater_workspace.py", "test_onefile_release.py"):
         path = PROJECT_ROOT / "tests" / name
         if path.is_file():
             assert not decorator.search(path.read_text(encoding="utf-8"))
 
 
-def test_exactly_four_bridge_assets_remain(bridge_workflow: str):
-    publish = bridge_workflow.split("Publish the stable bridge release", 1)[1]
+def test_exactly_the_openfetch_asset_family_is_published(bridge_workflow: str):
+    publish = bridge_workflow.split("Publish the stable OpenFetch release", 1)[1]
     assets = re.findall(r"^            dist/(.+)$", publish, flags=re.MULTILINE)
     assert assets == [
-        "NeuralExtractorV3.exe",
-        "NeuralExtractorV3-3.0.8-windows-x64.exe",
-        "NeuralExtractorV3-3.0.8-windows-x64.exe.sha256",
-        "NeuralExtractorV3-3.0.8-manifest.json",
+        "OpenFetch.exe",
+        "OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe",
+        "OpenFetch-${{ env.RELEASE_VERSION }}-windows-x64.exe.sha256",
+        "OpenFetch-${{ env.RELEASE_VERSION }}-manifest.json",
     ]
     assert "draft: false" in publish
     assert "prerelease: false" in publish

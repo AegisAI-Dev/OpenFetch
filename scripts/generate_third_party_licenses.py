@@ -933,7 +933,7 @@ def _python_packages() -> list[PackageRecord]:
     for distribution_name in sorted(distribution_names, key=str.lower):
         distribution = metadata.distribution(distribution_name)
         name = distribution.metadata.get("Name", distribution_name)
-        if name.lower() == "neural-extractor-v3":
+        if name.lower() in {"neural-extractor-v3", "openfetch"}:
             continue
         expression = (
             distribution.metadata.get("License-Expression")

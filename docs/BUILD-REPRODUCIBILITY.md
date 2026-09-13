@@ -1,10 +1,16 @@
 # Neural Extractor V3.0.8 build reproducibility
 
+> OpenFetch is the renamed Neural Extractor V3. Version-specific evidence in this
+> document was recorded for the audited Neural Extractor V3.0.8 candidate; artifact
+> and path names that begin with `NeuralExtractorV3` refer to that audited build and
+> must be regenerated for an OpenFetch public candidate.
+
+
 Release-gate-status: HOLD
 
 Qualified-review-status: HOLD
 
-This document defines the controlled Windows x64 build for Neural Extractor
+This document defines the controlled Windows x64 build for OpenFetch
 V3.0.8. It records engineering controls and evidence requirements; it does not
 authorize publication and does not provide legal certainty. Public distribution
 remains on **HOLD** until every source, notice, replacement/relink, ownership,

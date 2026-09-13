@@ -19,7 +19,7 @@ def test_release_workflow_orders_both_distribution_gates_before_publication():
         encoding="utf-8"
     )
     prebuild = workflow.index("scripts/verify_distribution_boundary.py")
-    build = workflow.index("-m PyInstaller NeuralExtractorV3.spec")
+    build = workflow.index("-m PyInstaller OpenFetch.spec")
     postbuild = workflow.index("scripts/verify_packaged_licensing.py")
     publish = workflow.index("Publish GitHub Release")
 
@@ -29,7 +29,7 @@ def test_release_workflow_orders_both_distribution_gates_before_publication():
 
 
 def test_spec_and_verifier_pin_one_cpython_libffi_and_auditable_pyz():
-    spec = (PROJECT_ROOT / "NeuralExtractorV3.spec").read_text(encoding="utf-8")
+    spec = (PROJECT_ROOT / "OpenFetch.spec").read_text(encoding="utf-8")
     verifier = (PROJECT_ROOT / "scripts" / "verify_packaged_licensing.py").read_text(
         encoding="utf-8"
     )
@@ -45,7 +45,7 @@ def test_spec_and_verifier_pin_one_cpython_libffi_and_auditable_pyz():
 
 
 def test_distribution_contract_requires_all_user_facing_compliance_materials():
-    spec = (PROJECT_ROOT / "NeuralExtractorV3.spec").read_text(encoding="utf-8")
+    spec = (PROJECT_ROOT / "OpenFetch.spec").read_text(encoding="utf-8")
     verifier = (PROJECT_ROOT / "scripts" / "verify_packaged_licensing.py").read_text(
         encoding="utf-8"
     )

@@ -7,7 +7,7 @@ already-implemented directory-update transaction into the GUI.
 ## Current implemented behavior (verified against source)
 
 `QtReplacementPolicy` lives in
-`src/neural_extractor_v3/core/update_directory_installer.py` (enum at line 131:
+`src/openfetch/core/update_directory_installer.py` (enum at line 131:
 `ABORT = "abort"`, `PRESERVE = "preserve"`, `REPLACE = "replace"`).
 
 Detection: `detect_modified_replaceable_files()` hashes every manifest
@@ -66,7 +66,7 @@ When `on_update_available` runs inside a one-folder installation and a
 directory manifest asset is available for the new release:
 
 1. Download and validate the release's directory manifest
-   (`NeuralExtractorV3-<version>-windows-x64-directory-manifest.json`) with
+   (`OpenFetch-<version>-windows-x64-directory-manifest.json`) with
    `DirectoryUpdateManifest.from_json`.
 2. Call `detect_modified_replaceable_files(install_root, manifest)`.
 3. If the result is empty: proceed with

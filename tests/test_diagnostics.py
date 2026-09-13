@@ -1,11 +1,11 @@
 import subprocess
 from types import SimpleNamespace
 
-from neural_extractor_v3.core import diagnostics
-from neural_extractor_v3.core.auth import AuthResolution, AuthStrategy, CookieFileStatus
-from neural_extractor_v3.core.downloader import YtdlpRunResult
-from neural_extractor_v3.core.js_runtime import JavaScriptRuntimeStatus
-from neural_extractor_v3.models import DownloadOptions
+from openfetch.core import diagnostics
+from openfetch.core.auth import AuthResolution, AuthStrategy, CookieFileStatus
+from openfetch.core.downloader import YtdlpRunResult
+from openfetch.core.js_runtime import JavaScriptRuntimeStatus
+from openfetch.models import DownloadOptions
 
 
 def test_diagnostics_never_logs_cookie_contents(tmp_path):
@@ -74,7 +74,7 @@ def test_format_probe_is_safe_and_uses_js_runtime(tmp_path, monkeypatch):
             return subprocess.CompletedProcess(
                 args,
                 0,
-                stdout="neural-extractor-node-ok",
+                stdout="openfetch-node-ok",
                 stderr="",
             )
         return subprocess.CompletedProcess(args, 0, stdout="", stderr="")

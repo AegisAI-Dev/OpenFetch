@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from neural_extractor_v3.core.auth import (
+from openfetch.core.auth import (
     BROWSER_FALLBACK_ORDER,
     AuthenticationState,
     BrowserCookieFailureKind,
@@ -70,7 +70,7 @@ def test_no_auth_strategy_when_no_cookie_or_browser():
 
 
 def test_dedicated_firefox_precedes_cookie_file_and_legacy_browsers(tmp_path):
-    application_data = tmp_path / "NeuralExtractorV3"
+    application_data = tmp_path / "OpenFetch"
     profile = application_data / "youtube" / "firefox-profile"
     profile.mkdir(parents=True)
     cookie_file = _write_cookie_file(

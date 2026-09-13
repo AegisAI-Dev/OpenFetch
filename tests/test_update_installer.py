@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from neural_extractor_v3.core import update_installer as installer_module
-from neural_extractor_v3.core.update_installer import (
+from openfetch.core import update_installer as installer_module
+from openfetch.core.update_installer import (
     RESULT_FILENAME,
     STARTUP_MARKER_FILENAME,
     TRANSACTION_FILENAME,
@@ -23,15 +23,15 @@ from neural_extractor_v3.core.update_installer import (
     recover_stale_update_ownership,
     write_transaction_startup_confirmation,
 )
-from neural_extractor_v3.core.update_manifest import MIN_UPDATE_SIZE_BYTES, UpdateManifest
-from neural_extractor_v3.core.update_ownership import (
+from openfetch.core.update_manifest import MIN_UPDATE_SIZE_BYTES, UpdateManifest
+from openfetch.core.update_ownership import (
     OwnershipRecord,
     OwnershipRole,
     TransactionState,
     UpdateOwnershipManager,
     normalized_target_identity,
 )
-from neural_extractor_v3.core.updater import UpdateError, UpdateInfo
+from openfetch.core.updater import UpdateError, UpdateInfo
 
 REAL_STOP_CHILD_PROCESS = installer_module._stop_child_process
 
@@ -183,9 +183,9 @@ def never_stop_real_processes(monkeypatch):
 def make_manifest(version=VERSION, content=NEW_BYTES):
     return UpdateManifest(
         schema_version=1,
-        application_name="Neural Extractor V3",
+        application_name="OpenFetch",
         release_version=version,
-        asset_filename=f"NeuralExtractorV3-{version}-windows-x64.exe",
+        asset_filename=f"OpenFetch-{version}-windows-x64.exe",
         asset_sha256=sha256(content),
         asset_size=len(content),
         platform="windows",
@@ -197,14 +197,14 @@ def make_manifest(version=VERSION, content=NEW_BYTES):
 
 def make_info(manifest):
     version = manifest.release_version
-    base = f"https://github.com/AegisAI-Dev/NeuralExtractor/releases/download/v{version}"
+    base = f"https://github.com/AegisAI-Dev/OpenFetch/releases/download/v{version}"
     return UpdateInfo(
         version=version,
         tag_name=f"v{version}",
-        name=f"Neural Extractor V3 v{version}",
-        html_url=f"https://github.com/AegisAI-Dev/NeuralExtractor/releases/tag/v{version}",
+        name=f"OpenFetch v{version}",
+        html_url=f"https://github.com/AegisAI-Dev/OpenFetch/releases/tag/v{version}",
         download_url=f"{base}/{manifest.asset_filename}",
-        manifest_url=f"{base}/NeuralExtractorV3-{version}-manifest.json",
+        manifest_url=f"{base}/OpenFetch-{version}-manifest.json",
         checksum_url="",
         published_at="",
         body="",
@@ -221,12 +221,13 @@ def write_transaction(
     target_bytes=OLD_BYTES,
     state: TransactionState = TransactionState.HANDED_OFF,
     transaction_id: str = TOKEN,
+    executable_stem: str = "OpenFetch",
 ) -> Scenario:
     root = (tmp_path / "updates").resolve()
-    target = (tmp_path / "install" / "NeuralExtractorV3.exe").resolve()
+    target = (tmp_path / "install" / f"{executable_stem}.exe").resolve()
     target.parent.mkdir(parents=True)
     target.write_bytes(target_bytes)
-    staged = root / VERSION / "package" / f"NeuralExtractorV3-{VERSION}-windows-x64.exe"
+    staged = root / VERSION / "package" / f"{executable_stem}-{VERSION}-windows-x64.exe"
     staged.parent.mkdir(parents=True)
     staged.write_bytes(staged_bytes)
     transaction_dir = root / VERSION / transaction_id
@@ -345,7 +346,7 @@ def make_applier(scenario: Scenario, launcher, **overrides):
 
 def test_source_mode_and_temporary_locations_fall_back_to_manual_install(tmp_path):
     manifest = make_manifest()
-    target = tmp_path / "NeuralExtractorV3.exe"
+    target = tmp_path / "OpenFetch.exe"
     target.write_bytes(OLD_BYTES)
 
     source = assess_installation_capability(manifest, target_executable=target, frozen=False)
@@ -370,7 +371,7 @@ def test_onefolder_install_requires_manual_consent_and_never_uses_exe_replacemen
     manifest = make_manifest()
     installation = tmp_path / "install"
     installation.mkdir()
-    target = installation / "NeuralExtractorV3.exe"
+    target = installation / "OpenFetch.exe"
     target.write_bytes(OLD_BYTES)
     monkeypatch.setattr(installer_module.sys, "_MEIPASS", str(installation), raising=False)
     monkeypatch.setattr(installer_module.sys, "platform", "win32")
@@ -391,7 +392,7 @@ def test_onefolder_install_requires_manual_consent_and_never_uses_exe_replacemen
 
 def test_capability_reports_insufficient_disk_space(tmp_path, monkeypatch):
     manifest = make_manifest()
-    target = tmp_path / "install" / "NeuralExtractorV3.exe"
+    target = tmp_path / "install" / "OpenFetch.exe"
     target.parent.mkdir()
     target.write_bytes(OLD_BYTES)
     monkeypatch.setattr(
@@ -414,7 +415,7 @@ def test_capability_reports_insufficient_disk_space(tmp_path, monkeypatch):
 
 def test_capability_combines_same_volume_staging_backup_and_helper_space(tmp_path, monkeypatch):
     manifest = make_manifest()
-    target = tmp_path / "install" / "NeuralExtractorV3.exe"
+    target = tmp_path / "install" / "OpenFetch.exe"
     target.parent.mkdir()
     target.write_bytes(OLD_BYTES)
     free_bytes = installer_module.DISK_SPACE_MARGIN_BYTES + 3 * MIN_UPDATE_SIZE_BYTES
@@ -440,7 +441,7 @@ def test_prepare_handoff_ack_uses_runtime_identity_not_wrapper_pid(tmp_path):
     manifest = make_manifest()
     info = make_info(manifest)
     root = (tmp_path / "updates").resolve()
-    target = (tmp_path / "install" / "NeuralExtractorV3.exe").resolve()
+    target = (tmp_path / "install" / "OpenFetch.exe").resolve()
     target.parent.mkdir()
     target.write_bytes(OLD_BYTES)
     staged = root / VERSION / "package" / manifest.asset_filename
@@ -503,7 +504,7 @@ def test_prepare_handoff_ack_uses_runtime_identity_not_wrapper_pid(tmp_path):
     assert handoff_records[0].owner_process_created == parent_created
     assert launches[0][1:] == ["--apply-update", str(prepared.transaction_path)]
     helper = Path(launches[0][0])
-    assert helper.name == "NeuralExtractorV3-Updater.exe"
+    assert helper.name == "OpenFetch-Updater.exe"
     assert helper.read_bytes() == OLD_BYTES
     transaction = load_update_transaction(
         prepared.transaction_path,
@@ -524,7 +525,7 @@ def test_prepare_handoff_timeout_cleans_reservation_and_stops_wrapper(tmp_path, 
     manifest = make_manifest()
     info = make_info(manifest)
     root = (tmp_path / "updates").resolve()
-    target = (tmp_path / "install" / "NeuralExtractorV3.exe").resolve()
+    target = (tmp_path / "install" / "OpenFetch.exe").resolve()
     target.parent.mkdir()
     target.write_bytes(OLD_BYTES)
     staged = root / VERSION / "package" / manifest.asset_filename
@@ -953,7 +954,7 @@ def test_duplicate_helper_for_same_transaction_is_rejected_and_preserved(tmp_pat
 
 def test_live_updater_for_different_target_does_not_block_installation(tmp_path):
     scenario = write_transaction(tmp_path)
-    other_target = (tmp_path / "second-install" / "NeuralExtractorV3.exe").resolve()
+    other_target = (tmp_path / "second-install" / "OpenFetch.exe").resolve()
     other_target.parent.mkdir()
     other_target.write_bytes(OLD_BYTES)
     other_pid = 949_494
@@ -1141,8 +1142,8 @@ def test_stale_confirmation_marker_cannot_satisfy_new_transaction(tmp_path):
 def test_transaction_paths_and_confirmation_reference_cannot_escape_update_root(tmp_path):
     scenario = write_transaction(tmp_path)
     payload = scenario.transaction.to_dict()
-    payload["target_executable"] = str(scenario.root / "NeuralExtractorV3.exe")
-    payload["target_identity"] = normalized_target_identity(scenario.root / "NeuralExtractorV3.exe")
+    payload["target_executable"] = str(scenario.root / "OpenFetch.exe")
+    payload["target_identity"] = normalized_target_identity(scenario.root / "OpenFetch.exe")
     installer_module._atomic_write_json(scenario.transaction_path, payload)
 
     with pytest.raises(UpdateError):

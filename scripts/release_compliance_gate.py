@@ -12,6 +12,19 @@ import zipfile
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+try:
+    from scripts.project_identity import (
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_DIST_NAME,
+    )
+except ModuleNotFoundError:  # executed directly as scripts/release_compliance_gate.py
+    from project_identity import (  # type: ignore[no-redef]
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_DIST_NAME,
+    )
+
 # Legacy bundled-provider V3.0.8 one-file EXE (PyQt6 + in-process GPL
 # PO-provider payload) and legacy V3.0.4 one-file EXE (PyQt6, no embedded
 # notices/source). Neither may appear anywhere in the release workspace.
@@ -490,16 +503,16 @@ def verify_artifact(root: Path, artifact: Path) -> list[str]:
                 failures.append("Application ZIP must contain exactly one top-level directory")
                 return failures
             top_level = next(iter(top_levels))
-            if top_level != "NeuralExtractorV3-3.0.8-windows-x64":
+            if top_level != ONEFOLDER_DIST_NAME:
                 failures.append(f"Unexpected application ZIP root: {top_level}")
             failures.extend(verify_embedded_binary_map(root, handle, names, top_level))
             failures.extend(
                 verify_embedded_compliance_bindings(root, handle, names, top_level)
             )
-            executable_name = f"{top_level}/NeuralExtractorV3.exe"
+            executable_name = f"{top_level}/{EXECUTABLE_NAME}"
             if executable_name in names:
-                with tempfile.TemporaryDirectory(prefix="neural-release-gate-") as temporary:
-                    executable = Path(temporary) / "NeuralExtractorV3.exe"
+                with tempfile.TemporaryDirectory(prefix="openfetch-release-gate-") as temporary:
+                    executable = Path(temporary) / EXECUTABLE_NAME
                     executable.write_bytes(handle.read(executable_name))
                     failures.extend(scan_pyinstaller_modules(executable))
     except (OSError, zipfile.BadZipFile, KeyError) as exc:
@@ -508,7 +521,7 @@ def verify_artifact(root: Path, artifact: Path) -> list[str]:
     if prohibited:
         failures.extend(f"Prohibited main-artifact path: {name}" for name in prohibited)
     required_suffixes = (
-        "/NeuralExtractorV3.exe",
+        f"/{EXECUTABLE_NAME}",
         "/compliance/LICENSE",
         "/compliance/BINARY-TO-SOURCE-MAP.json",
     )
@@ -568,7 +581,7 @@ def audit(
     preflight_status = "PASS" if not unique_failures else "HOLD"
     return {
         "schema_version": 1,
-        "application_version": "3.0.8",
+        "application_version": APPLICATION_VERSION,
         "mode": "preflight" if preflight else "release",
         "preflight_status": preflight_status if preflight else "NOT-APPLICABLE",
         "public_distribution_verdict": (

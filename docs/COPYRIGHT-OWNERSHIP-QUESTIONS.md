@@ -1,4 +1,4 @@
-# Neural Extractor copyright ownership questions
+# OpenFetch copyright ownership questions
 
 Project-ownership finding status: **RESOLVED**  
 Public-distribution verdict: **HOLD**  
@@ -18,10 +18,10 @@ or provenance finding.
 | Public attribution name | Public attribution uses the pseudonym `0xRootNull`. The legal identity behind the pseudonym is intentionally not published. | RESOLVED |
 | Project start year | Development began in 2025. | RESOLVED |
 | Copyright year range | The public project-owned notice uses `2025-2026`. | RESOLVED |
-| Company or legal-entity status | `Neuralshield` is a project name, not a registered company or legal entity. There is no company registration number. | RESOLVED |
+| Company or legal-entity status | `Brainbyte` is the OpenFetch brand and `Neuralshield` was the former project brand; neither is a registered company or legal entity. There is no company registration number. | RESOLVED |
 | Employer, client, or commissioning status | There is no employer, client, commissioning party, employment agreement, assignment, or contributor agreement for the project. | RESOLVED |
 | Known human contributors | No other human contributor is currently known, and no known third-party human contributor claim has been identified. | RESOLVED |
-| MIT licensing intent | The owner explicitly authorizes Neural Extractor and all project-owned portions to be published under the standard MIT License. | RESOLVED |
+| MIT licensing intent | The owner explicitly authorizes OpenFetch and all project-owned portions to be published under the standard MIT License. | RESOLVED |
 | AI-assisted development | AI coding tools were used extensively under the owner's selection, direction, integration, testing, and final approval. | RECORDED |
 
 The public record does not request, contain, or require the maintainer's real
@@ -30,7 +30,7 @@ only `0xRootNull`.
 
 ## Scope of the owner confirmation
 
-The confirmation applies only to Neural Extractor-owned source, tests,
+The confirmation applies only to OpenFetch-owned source, tests,
 documentation, build and release automation, and other project-owned assets.
 It does not claim ownership of third-party code, runtimes, libraries, tools,
 notices, license texts, or source evidence.

@@ -1,14 +1,14 @@
 from types import SimpleNamespace
 
-from neural_extractor_v3.core import youtube_verifier as verifier_module
-from neural_extractor_v3.core.downloader import (
+from openfetch.core import youtube_verifier as verifier_module
+from openfetch.core.downloader import (
     YtdlpCapturedOutput,
     YtdlpRunError,
     YtdlpRunResult,
 )
-from neural_extractor_v3.core.youtube_connection import ManagedBrowser
-from neural_extractor_v3.core.youtube_errors import FailureCategory
-from neural_extractor_v3.core.youtube_verifier import verify_dedicated_youtube_profile
+from openfetch.core.youtube_connection import ManagedBrowser
+from openfetch.core.youtube_errors import FailureCategory
+from openfetch.core.youtube_verifier import verify_dedicated_youtube_profile
 
 
 def test_mocked_verification_is_metadata_only_bounded_and_classifies_po_warning(

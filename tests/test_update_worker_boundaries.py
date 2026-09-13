@@ -6,11 +6,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from neural_extractor_v3.config import GITHUB_REPO
-from neural_extractor_v3.core.update_manifest import UpdateManifest, expected_exe_filename
-from neural_extractor_v3.core.update_ownership import TransactionState
-from neural_extractor_v3.core.updater import UpdateDownloader, UpdateError, UpdateInfo
-from neural_extractor_v3.gui import main_window as gui_module
+from openfetch.config import GITHUB_REPO
+from openfetch.core.update_manifest import UpdateManifest, expected_exe_filename
+from openfetch.core.update_ownership import TransactionState
+from openfetch.core.updater import UpdateDownloader, UpdateError, UpdateInfo
+from openfetch.gui import main_window as gui_module
 
 TRANSACTION_A = "a" * 64
 TRANSACTION_B = "b" * 64
@@ -53,7 +53,7 @@ def _update_info(content: bytes, version: str = "3.0.5") -> UpdateInfo:
     download_url = f"https://github.com/{GITHUB_REPO}/releases/download/{tag_name}/{filename}"
     manifest = UpdateManifest(
         schema_version=1,
-        application_name="Neural Extractor V3",
+        application_name="OpenFetch",
         release_version=version,
         asset_filename=filename,
         asset_sha256=sha256,
@@ -66,7 +66,7 @@ def _update_info(content: bytes, version: str = "3.0.5") -> UpdateInfo:
     return UpdateInfo(
         version=version,
         tag_name=tag_name,
-        name=f"Neural Extractor V3 v{version}",
+        name=f"OpenFetch v{version}",
         html_url=f"https://github.com/{GITHUB_REPO}/releases/tag/{tag_name}",
         download_url=download_url,
         manifest_url=f"{download_url}.manifest.json",

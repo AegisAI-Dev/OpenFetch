@@ -8,7 +8,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from neural_extractor_v3.core.ytdlp_worker import PROTOCOL_PREFIX, PROTOCOL_SMOKE_TITLE
+from openfetch.core.ytdlp_worker import PROTOCOL_PREFIX, PROTOCOL_SMOKE_TITLE
 
 
 def _parse_frames(output: bytes) -> list[dict[str, object]]:
@@ -27,7 +27,7 @@ def main() -> int:
         "executable",
         nargs="?",
         type=Path,
-        default=Path("dist/NeuralExtractorV3.exe"),
+        default=Path("dist/OpenFetch.exe"),
     )
     args = parser.parse_args()
     executable = args.executable.resolve()

@@ -13,12 +13,12 @@ LICENSE_OUTPUT = LICENSE_ROOT / "RELEASE-LICENSE-MANIFEST.sha256"
 
 SOURCE_FILES = (
     ".gitattributes",
-    ".github/workflows/build-bridge-release.yml",
+    ".github/workflows/build-onefile-release.yml",
     ".github/workflows/build-release.yml",
     ".gitignore",
     "LICENSE",
-    "NeuralExtractorV3-bridge-onefile.spec",
-    "NeuralExtractorV3.spec",
+    "OpenFetch-onefile.spec",
+    "OpenFetch.spec",
     "PROJECT-METADATA.json",
     "README.md",
     "THIRD_PARTY_LICENSES.txt",
@@ -77,7 +77,11 @@ def _source_paths(root: Path) -> list[Path]:
         for path in directory.rglob("*"):
             if not path.is_file():
                 continue
-            if any(part in IGNORED_PARTS for part in path.relative_to(root).parts):
+            relative_parts = path.relative_to(root).parts
+            if any(
+                part in IGNORED_PARTS or part.endswith(".egg-info")
+                for part in relative_parts
+            ):
                 continue
             paths.add(path)
     return sorted(paths, key=lambda path: path.relative_to(root).as_posix())

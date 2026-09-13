@@ -20,6 +20,15 @@ from typing import Any
 from packaging.tags import Tag, compatible_tags, cpython_tags
 from packaging.utils import canonicalize_name, parse_wheel_filename
 
+try:
+    from scripts.project_identity import (
+        APPLICATION_VERSION,
+    )
+except ModuleNotFoundError:  # executed directly as scripts/prepare_offline_inputs.py
+    from project_identity import (  # type: ignore[no-redef]
+        APPLICATION_VERSION,
+    )
+
 
 @dataclass(frozen=True)
 class Download:
@@ -102,7 +111,7 @@ def download_verified(item: Download) -> dict[str, Any]:
     temporary = item.destination.with_name(f".{item.destination.name}.download")
     if temporary.exists():
         temporary.unlink()
-    request = urllib.request.Request(item.url, headers={"User-Agent": "NeuralExtractor-audit/3.0.8"})
+    request = urllib.request.Request(item.url, headers={"User-Agent": f"OpenFetch-build-inputs/{APPLICATION_VERSION}"})
     with urllib.request.urlopen(request, timeout=120) as response, temporary.open("wb") as output:
         while chunk := response.read(1024 * 1024):
             output.write(chunk)
@@ -167,6 +176,10 @@ def locked_python_downloads(project_root: Path) -> list[Download]:
 
     for package in lock["package"]:
         name = str(package["name"])
+        package_source = package.get("source", {})
+        if isinstance(package_source, dict) and "editable" in package_source:
+            # The project's own entry has a dynamic version and no locked artifact.
+            continue
         version = str(package["version"])
         canonical = canonicalize_name(name)
         source = package.get("sdist")
@@ -213,7 +226,7 @@ def locked_python_downloads(project_root: Path) -> list[Download]:
 
 def node_downloads(project_root: Path) -> tuple[list[Download], dict[str, Any]]:
     request = urllib.request.Request(
-        NODE_SHASUMS_URL, headers={"User-Agent": "NeuralExtractor-audit/3.0.8"}
+        NODE_SHASUMS_URL, headers={"User-Agent": f"OpenFetch-build-inputs/{APPLICATION_VERSION}"}
     )
     with urllib.request.urlopen(request, timeout=60) as response:
         shasums_bytes = response.read()
@@ -294,7 +307,7 @@ def main() -> int:
         row["path"] = absolute.relative_to(project_root).as_posix()
     manifest = {
         "schema_version": 1,
-        "application_version": "3.0.8",
+        "application_version": APPLICATION_VERSION,
         "network_phase": "preparation-only",
         "public_distribution_verdict": "HOLD",
         "wheel_target": {

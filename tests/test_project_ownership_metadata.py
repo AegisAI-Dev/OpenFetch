@@ -38,6 +38,7 @@ def test_project_attribution_is_consistent_across_public_metadata():
         "docs", "PROJECT-OWNERSHIP-DECLARATION.md"
     ).read_text(encoding="utf-8")
     assert "Public author and copyright holder: 0xRootNull" in declaration
+    assert "Public brand: Brainbyte" in declaration
     assert "Copyright period: 2025-2026" in declaration
     assert "Registered company or legal entity: None" in declaration
     assert "Employer, client or commissioning party: None" in declaration
@@ -46,7 +47,7 @@ def test_project_attribution_is_consistent_across_public_metadata():
     assert "Public distribution verdict: HOLD" in declaration
 
     version_info = PROJECT_ROOT.joinpath("version_info.txt").read_text(encoding="utf-8")
-    assert 'StringStruct("CompanyName", "0xRootNull")' in version_info
+    assert 'StringStruct("CompanyName", "Brainbyte")' in version_info
     assert '"Copyright (c) 2025-2026 0xRootNull"' in version_info
 
 

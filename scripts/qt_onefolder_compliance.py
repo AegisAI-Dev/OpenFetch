@@ -20,13 +20,27 @@ import tomllib
 import zipfile
 from pathlib import Path, PurePosixPath
 
+try:
+    from scripts.project_identity import (
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_DIST_NAME,
+        ONEFOLDER_SPEC_NAME,
+    )
+except ModuleNotFoundError:  # executed directly as scripts/qt_onefolder_compliance.py
+    from project_identity import (  # type: ignore[no-redef]
+        APPLICATION_VERSION,
+        EXECUTABLE_NAME,
+        ONEFOLDER_DIST_NAME,
+        ONEFOLDER_SPEC_NAME,
+    )
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SPEC_PATH = PROJECT_ROOT / "NeuralExtractorV3.spec"
-VERSION = "3.0.8"
-DIST_NAME = f"NeuralExtractorV3-{VERSION}-windows-x64"
-EXECUTABLE_NAME = "NeuralExtractorV3.exe"
+SPEC_PATH = PROJECT_ROOT / ONEFOLDER_SPEC_NAME
+VERSION = APPLICATION_VERSION
+DIST_NAME = ONEFOLDER_DIST_NAME
 COMPONENT_MANIFEST_NAME = "QT-PYSIDE-COMPONENTS.json"
-REPLACEMENT_MARKER = b"\nNEURAL_EXTRACTOR_QT_REPLACEMENT_SMOKE_V1\n"
+REPLACEMENT_MARKER = b"\nOPENFETCH_QT_REPLACEMENT_SMOKE_V1\n"
 
 PYSIDE_VERSION = "6.11.1"
 SHIBOKEN_VERSION = "6.11.1"
@@ -586,7 +600,7 @@ def _relative_candidate_path(root: Path, value: object, label: str) -> str:
 def _run_gui_smoke(
     root: Path, label: str, *, platform_name: str = "offscreen"
 ) -> dict[str, object]:
-    with tempfile.TemporaryDirectory(prefix=f"neural-qt-{label}-") as temporary:
+    with tempfile.TemporaryDirectory(prefix=f"openfetch-qt-{label}-") as temporary:
         result_path = Path(temporary) / "gui-result.json"
         environment = os.environ.copy()
         environment["QT_QPA_PLATFORM"] = platform_name
@@ -727,7 +741,7 @@ def replacement_smoke(root: Path, output: Path | None = None) -> dict[str, objec
         "overlay_targets": sorted(overlay_relatives),
     }
 
-    with tempfile.TemporaryDirectory(prefix="neural-qt-replacement-backup-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="openfetch-qt-replacement-backup-") as temporary:
         backup_root = Path(temporary)
         for relative in EXPECTED_QT_PATHS:
             backup = backup_root / Path(PurePosixPath(relative))

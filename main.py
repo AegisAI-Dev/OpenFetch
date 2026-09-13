@@ -1,6 +1,6 @@
-"""Entry point for Neural Extractor V3."""
+"""Entry point for OpenFetch."""
 
-from neural_extractor_v3.app import main
+from openfetch.app import main
 
 if __name__ == "__main__":
     raise SystemExit(main())

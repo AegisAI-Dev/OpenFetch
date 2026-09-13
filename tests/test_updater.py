@@ -4,15 +4,25 @@ from pathlib import Path
 
 import pytest
 
-from neural_extractor_v3.config import GITHUB_LATEST_RELEASE_API, GITHUB_RELEASES_URL, GITHUB_REPO
-from neural_extractor_v3.core.update_manifest import (
+from openfetch.config import (
+    APP_NAME,
+    GITHUB_LATEST_RELEASE_API,
+    GITHUB_RELEASES_URL,
+    GITHUB_REPO,
+    LEGACY_APP_NAME,
+)
+from openfetch.core.update_manifest import (
+    LEGACY_RELEASE,
     MAX_UPDATE_SIZE_BYTES,
     MIN_UPDATE_SIZE_BYTES,
+    OPENFETCH_RELEASE,
+    UpdateManifest,
+    UpdateValidationError,
     expected_checksum_filename,
     expected_exe_filename,
     expected_manifest_filename,
 )
-from neural_extractor_v3.core.updater import (
+from openfetch.core.updater import (
     UpdateChecker,
     UpdateDownloader,
     UpdateError,
@@ -28,8 +38,10 @@ class FakeResponse:
         payload=None,
         headers=None,
         chunks=None,
+        status_code: int = 200,
     ) -> None:
         self.url = url
+        self.status_code = status_code
         self.content = content
         self.payload = payload
         self.headers = headers or {}
@@ -72,7 +84,7 @@ def asset_url(version: str, filename: str) -> str:
 def manifest_document(version: str, content: bytes, **overrides) -> bytes:
     payload = {
         "schema_version": 1,
-        "application_name": "Neural Extractor V3",
+        "application_name": APP_NAME,
         "release_version": version,
         "asset_filename": expected_exe_filename(version),
         "asset_sha256": hashlib.sha256(content).hexdigest(),
@@ -93,9 +105,9 @@ def release_payload(version: str, size: int, *, draft=False, prerelease=False, a
     if assets is None:
         assets = [
             {
-                "name": "NeuralExtractorV3.exe",
+                "name": "OpenFetch.exe",
                 "size": size,
-                "browser_download_url": asset_url(version, "NeuralExtractorV3.exe"),
+                "browser_download_url": asset_url(version, "OpenFetch.exe"),
             },
             {
                 "name": exe_name,
@@ -115,7 +127,7 @@ def release_payload(version: str, size: int, *, draft=False, prerelease=False, a
         ]
     return {
         "tag_name": f"v{version}",
-        "name": f"Neural Extractor V3 v{version}",
+        "name": f"{APP_NAME} v{version}",
         "html_url": f"https://github.com/{GITHUB_REPO}/releases/tag/v{version}",
         "published_at": "2026-07-12T12:00:00Z",
         "body": "Secure updater release",
@@ -178,24 +190,24 @@ def test_exact_versioned_exe_and_manifest_are_selected_not_unversioned(package_c
     )
 
     assert candidate is not None
-    assert candidate.exe_url.endswith("/NeuralExtractorV3-3.0.3-windows-x64.exe")
-    assert candidate.manifest_url.endswith("/NeuralExtractorV3-3.0.3-manifest.json")
-    assert not candidate.exe_url.endswith("/NeuralExtractorV3.exe")
+    assert candidate.exe_url.endswith("/OpenFetch-3.0.3-windows-x64.exe")
+    assert candidate.manifest_url.endswith("/OpenFetch-3.0.3-manifest.json")
+    assert not candidate.exe_url.endswith("/OpenFetch.exe")
 
 
 def test_similar_or_missing_exact_asset_is_rejected(package_content):
     version = "3.0.3"
     assets = [
         {
-            "name": "NeuralExtractorV3.exe",
+            "name": "OpenFetch.exe",
             "size": len(package_content),
-            "browser_download_url": asset_url(version, "NeuralExtractorV3.exe"),
+            "browser_download_url": asset_url(version, "OpenFetch.exe"),
         },
         {
-            "name": "NeuralExtractorV3-3.0.3-windows-x64-helper.exe",
+            "name": "OpenFetch-3.0.3-windows-x64-helper.exe",
             "size": len(package_content),
             "browser_download_url": asset_url(
-                version, "NeuralExtractorV3-3.0.3-windows-x64-helper.exe"
+                version, "OpenFetch-3.0.3-windows-x64-helper.exe"
             ),
         },
     ]
@@ -400,3 +412,147 @@ def test_cancelled_download_cleans_partial_file(tmp_path, package_content):
 
     assert exc_info.value.code == "cancelled"
     assert not list(Path(tmp_path).rglob("*.part"))
+
+
+def _family_assets(version: str, size: int, naming):
+    return [
+        {
+            "name": naming.exe_filename(version),
+            "size": size,
+            "browser_download_url": asset_url(version, naming.exe_filename(version)),
+        },
+        {
+            "name": naming.manifest_filename(version),
+            "size": 500,
+            "browser_download_url": asset_url(version, naming.manifest_filename(version)),
+        },
+        {
+            "name": naming.checksum_filename(version),
+            "size": 100,
+            "browser_download_url": asset_url(version, naming.checksum_filename(version)),
+        },
+    ]
+
+
+def test_release_with_both_asset_families_selects_the_openfetch_assets(package_content):
+    version = "3.1.0"
+    size = len(package_content)
+    assets = _family_assets(version, size, OPENFETCH_RELEASE) + _family_assets(
+        version, size, LEGACY_RELEASE
+    )
+    checker = UpdateChecker()
+
+    candidate = checker.parse_release(
+        release_payload(version, size, assets=assets), current_version="3.0.8"
+    )
+
+    assert candidate is not None
+    assert candidate.exe_url.endswith("/OpenFetch-3.1.0-windows-x64.exe")
+    assert candidate.manifest_url.endswith("/OpenFetch-3.1.0-manifest.json")
+    info = checker.bind_manifest(candidate, manifest_document(version, package_content), "3.0.8")
+    assert info.manifest.application_name == "OpenFetch"
+
+
+def test_legacy_named_assets_alone_are_not_installed_by_openfetch(package_content):
+    version = "3.1.1"
+    assets = _family_assets(version, len(package_content), LEGACY_RELEASE)
+
+    with pytest.raises(UpdateError) as exc_info:
+        UpdateChecker().parse_release(
+            release_payload(version, len(package_content), assets=assets), "3.1.0"
+        )
+
+    assert exc_info.value.code == "missing_asset"
+
+
+def test_openfetch_rejects_a_legacy_manifest_for_its_own_asset(package_content):
+    document = manifest_document(
+        "3.1.0",
+        package_content,
+        application_name=LEGACY_APP_NAME,
+        asset_filename=LEGACY_RELEASE.exe_filename("3.1.0"),
+    )
+
+    with pytest.raises(UpdateValidationError, match="application name"):
+        UpdateManifest.from_json(document, release_version="3.1.0", current_version="3.0.8")
+
+
+def test_compatibility_manifest_satisfies_the_installed_neural_extractor_contract(
+    package_content,
+):
+    """The legacy asset family must parse under the rules 3.0.4-3.0.8 enforce."""
+    document = manifest_document(
+        "3.1.0",
+        package_content,
+        application_name="Neural Extractor V3",
+        asset_filename="NeuralExtractorV3-3.1.0-windows-x64.exe",
+        minimum_updater_version="3.0.4",
+    )
+
+    for installed in ("3.0.4", "3.0.7", "3.0.8"):
+        manifest = UpdateManifest.from_json(
+            document,
+            release_version="3.1.0",
+            current_version=installed,
+            naming=LEGACY_RELEASE,
+        )
+        assert manifest.asset_filename == "NeuralExtractorV3-3.1.0-windows-x64.exe"
+        assert manifest.minimum_updater_version == "3.0.4"
+
+
+def test_moved_release_feed_is_reported_instead_of_an_invalid_version():
+    redirect = FakeResponse(
+        url=GITHUB_LATEST_RELEASE_API,
+        status_code=301,
+        payload={
+            "message": "Moved Permanently",
+            "url": "https://api.github.com/repositories/1/releases/latest",
+        },
+    )
+    session = FakeSession(redirect)
+
+    with pytest.raises(UpdateError) as exc_info:
+        UpdateChecker(session=session).check("3.1.0")
+
+    assert exc_info.value.code == "release_source_moved"
+    assert exc_info.value.technical == "HTTP 301"
+    assert session.calls[0][1]["allow_redirects"] is False
+    assert redirect.closed
+
+
+def test_openfetch_checks_only_the_canonical_repository():
+    assert GITHUB_REPO == "AegisAI-Dev/OpenFetch"
+    assert GITHUB_LATEST_RELEASE_API == (
+        "https://api.github.com/repos/AegisAI-Dev/OpenFetch/releases/latest"
+    )
+    checker = UpdateChecker()
+    assert checker.api_url == GITHUB_LATEST_RELEASE_API
+    assert checker.releases_url == GITHUB_RELEASES_URL
+
+
+def test_a_repository_without_releases_is_reported_as_unavailable():
+    """A fresh canonical repository answers /releases/latest with 404."""
+    missing = FakeResponse(url=GITHUB_LATEST_RELEASE_API, status_code=404, payload={})
+    session = FakeSession(missing)
+
+    with pytest.raises(UpdateError) as exc_info:
+        UpdateChecker(session=session).check("3.1.0")
+
+    assert exc_info.value.code == "release_source_unavailable"
+    assert exc_info.value.technical == "HTTP 404"
+    assert missing.closed
+
+
+def test_redirects_are_never_followed_for_the_release_feed(package_content):
+    """GitHub answers a renamed repository with 301; following it is unsafe."""
+    payload = release_payload("3.1.1", len(package_content))
+    session = FakeSession(
+        FakeResponse(url=GITHUB_LATEST_RELEASE_API, status_code=301, payload=payload)
+    )
+
+    with pytest.raises(UpdateError) as exc_info:
+        UpdateChecker(session=session).check("3.1.0")
+
+    # Even a redirect whose body would parse as a valid release is refused.
+    assert exc_info.value.code == "release_source_moved"
+    assert session.calls[0][1]["allow_redirects"] is False

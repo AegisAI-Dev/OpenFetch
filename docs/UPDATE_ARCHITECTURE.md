@@ -1,4 +1,40 @@
-# Neural Extractor V3 Update Architecture
+# OpenFetch Update Architecture
+
+## Release 3.1.0: rename, release-path repair, and legacy upgrade path
+
+OpenFetch 3.1.0 is the renamed Neural Extractor V3. The self-updater itself
+(check, verified download, detached helper, startup confirmation, rollback) was
+intact; three structural faults prevented it from delivering updates:
+
+1. **No release could reach installed builds.** The compliance-gated workflow
+   `build-release.yml` stops at the licensing HOLD gate, and the only publishing
+   path, the family bridge workflow, accepted exactly version 3.0.8. Every
+   installed 3.0.4–3.0.8 build therefore reported "no update" indefinitely.
+   Repair: `build-onefile-release.yml` is an owner-confirmed one-file release
+   workflow for any version equal to the source version (confirmation
+   `PUBLISH-OPENFETCH-<version>`), keeping every smoke, boundary scan, and
+   manifest check of the bridge workflow. The compliance gate is unchanged.
+2. **The default build could not self-update.** `build.bat` builds the
+   compliance one-folder layout, which the one-file transaction refuses
+   (`onefolder_manual_install_required`). The directory transaction still needs
+   the reviewed Qt replacement consent dialog, so this stays fail-closed and is
+   documented; the updatable distribution is `OpenFetch-onefile.spec`.
+3. **The repository rename cut off every installed build.** The repository is
+   now `AegisAI-Dev/OpenFetch`, and the pre-rename API URL answers
+   `301 Moved Permanently`. Installed builds call it with
+   `allow_redirects=False`; `raise_for_status()` does not raise for 3xx, so they
+   parse the redirect body, find no `tag_name`, and report
+   *"The latest release has an invalid version."* (code `invalid_version`).
+   Measured against live GitHub for 3.0.4, 3.0.7 and 3.0.8.
+   Repair: a two-repository bridge (below). OpenFetch trusts only the canonical
+   repository; a separate owner-controlled bridge repository keeps the exact
+   pre-rename name and serves those clients. A 3xx answer is now classified as
+   `release_source_moved` and a missing feed as `release_source_unavailable`,
+   instead of being parsed as release metadata. Redirects are still never
+   followed.
+
+See [OPENFETCH-MIGRATION.md](OPENFETCH-MIGRATION.md) for the upgrade sequence,
+repository-rename order, and user-data migration.
 
 ## Release 3.0.4 transaction-handoff repair
 
@@ -43,11 +79,23 @@ update. Asset selection could also accept an ambiguous EXE name.
 
 ## Trust Model
 
-The automatic source is pinned in code to the official repository:
+The automatic source is pinned in code (`openfetch.config.GITHUB_REPO`) to the
+canonical repository:
 
 ```text
-AegisAI-Dev/NeuralExtractor
+AegisAI-Dev/OpenFetch
 ```
+
+Installed Neural Extractor V3 updaters are pinned to the pre-rename slug and
+cannot be repointed, so they are served by a separate bridge repository with
+that exact name, owned by the same account:
+
+```text
+AegisAI-Dev/NeuralExtractor   (migration bridge, legacy asset family only)
+```
+
+OpenFetch never reads the bridge, and the updater refuses any other source:
+constructing `UpdateChecker` with a different API or releases URL raises.
 
 Only the latest non-draft, non-prerelease GitHub Release is considered. The
 updater accepts only HTTPS URLs matching exact release-asset URLs in that
@@ -65,21 +113,25 @@ step. Do not describe the EXE as publisher-signed.
 
 ## Release Assets
 
-For release `X.Y.Z`, automatic installation requires exactly:
+In `AegisAI-Dev/OpenFetch`, OpenFetch automatic installation requires exactly:
 
 ```text
-NeuralExtractorV3-X.Y.Z-windows-x64.exe
-NeuralExtractorV3-X.Y.Z-manifest.json
+OpenFetch-X.Y.Z-windows-x64.exe
+OpenFetch-X.Y.Z-manifest.json
 ```
 
-The workflow also publishes this human-verification sidecar:
+plus the human-verification sidecar `OpenFetch-X.Y.Z-windows-x64.exe.sha256`
+and the convenience download `OpenFetch.exe`, which the updater never selects.
+
+In the bridge repository `AegisAI-Dev/NeuralExtractor`, the one migration
+release `v3.1.0` carries exactly what installed 3.0.4-3.0.8 clients request,
+built from the same executable:
 
 ```text
-NeuralExtractorV3-X.Y.Z-windows-x64.exe.sha256
+NeuralExtractorV3-3.1.0-windows-x64.exe
+NeuralExtractorV3-3.1.0-manifest.json          application_name "Neural Extractor V3"
+NeuralExtractorV3-3.1.0-windows-x64.exe.sha256
 ```
-
-`NeuralExtractorV3.exe` may remain as a convenience download, but the automatic
-updater never selects it.
 
 ## Manifest Format
 
@@ -87,9 +139,9 @@ Schema version 1 contains exactly these required fields plus one optional field:
 
 ```json
 {
-  "application_name": "Neural Extractor V3",
+  "application_name": "OpenFetch",
   "architecture": "x64",
-  "asset_filename": "NeuralExtractorV3-3.0.2-windows-x64.exe",
+  "asset_filename": "OpenFetch-3.0.2-windows-x64.exe",
   "asset_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
   "asset_size": 123456789,
   "channel": "stable",
@@ -110,7 +162,7 @@ invalid hashes, and implausible sizes.
 1. The app selects the exact versioned EXE and manifest from GitHub metadata.
 2. GitHub's reported EXE size must equal the manifest size.
 3. The EXE streams into a random `.part` file below
-   `%LOCALAPPDATA%\NeuralExtractorV3\updates\<version>\package`.
+   `%LOCALAPPDATA%\OpenFetch\updates\<version>\package`.
 4. Content-Length, actual byte count, manifest size, and the global maximum size
    are enforced.
 5. The file is flushed and closed, then SHA-256 is recalculated locally.
@@ -163,14 +215,14 @@ If rollback fails, recoverable files remain in place and a native recovery
 message gives the exact backup and target paths. Sanitized helper events are in:
 
 ```text
-%LOCALAPPDATA%\NeuralExtractorV3\updates\updater.log
+%LOCALAPPDATA%\OpenFetch\updates\updater.log
 ```
 
 ## One-Folder Directory Transaction
 
 The compliance-friendly one-folder distribution is updated by a separate
 directory-wide transaction in
-`src/neural_extractor_v3/core/update_directory_installer.py`. It follows the
+`src/openfetch/core/update_directory_installer.py`. It follows the
 same ownership, state-machine, startup-confirmation, and rollback discipline as
 the one-file transaction, with these differences:
 
@@ -226,7 +278,7 @@ Recommended owner procedure without Git CLI:
    interface, then confirm the default branch contains version 3.0.4 and the
    updated workflow.
 5. Confirm that tag `v3.0.4` does not already exist. In GitHub Actions, open
-   `Build and Release Neural Extractor V3`, choose `Run workflow`, select the
+   `Build and Release Neural Extractor V3` (now `Build and Release OpenFetch (compliance-gated)`), choose `Run workflow`, select the
    default branch, enter exactly `3.0.4`, and run it.
 6. Wait for validation, tests, PyInstaller, checksum, manifest, artifact upload,
    and GitHub Release publication to complete.
@@ -243,7 +295,7 @@ fail rather than reusing an ambiguous release target.
 
 ## Upgrade Expectations
 
-- `3.0.1 -> 3.0.2`: detect the release, open its page, close Neural Extractor,
+- `3.0.1 -> 3.0.2`: detect the release, open its page, close the application,
   manually place/run the 3.0.2 EXE once.
 - `3.0.2/3.0.3 -> 3.0.4`: manually download and run 3.0.4 once because the
   installed helper handoff is defective. Do not overwrite the old EXE while it
