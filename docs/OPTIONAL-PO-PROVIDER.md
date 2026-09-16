@@ -70,6 +70,45 @@ helper package's own installer, if any, is outside OpenFetch and must be
 started deliberately by the user. Removing `active.json` disables the
 integration without affecting ordinary downloads.
 
+### Generating the activation manifest
+
+The repository ships a first-party generator,
+`scripts/New-OpenFetchPoHelperActivation.ps1`. It contains no provider code: it
+only hashes a helper package the user has already installed and writes the
+manifest that OpenFetch verifies before every helper launch. It runs in the
+Windows PowerShell 5.1 included with Windows, so the target PC needs no Python
+or Node installation:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File New-OpenFetchPoHelperActivation.ps1 -PackageRoot "D:\Tools\OpenFetch PO Helper 1.3.1"
+```
+
+Without `-OutputPath` it writes
+`%LOCALAPPDATA%\OpenFetch\optional-po-provider\active.json`. The generator:
+
+- refuses a directory without `node.exe` and `helper.mjs`, and a `helper.mjs`
+  that does not declare the supported helper id, helper, provider and protocol
+  versions;
+- refuses to write the manifest inside the package root, and refuses to replace
+  an existing manifest unless `-Force` is given;
+- rejects reparse points, non-ASCII paths, case-folded path collisions and the
+  package size/count limits enforced by the verifier;
+- writes atomically, as UTF-8 without BOM; and
+- warns when the package contains regenerable cache directories such as
+  `__pycache__`, because any later change to them invalidates the manifest.
+
+The manifest records the package exactly as it is on disk. It therefore
+guarantees that the package cannot change after activation, but it does **not**
+establish publisher authenticity: verify the package against its publisher's
+records before generating the manifest. Every package change requires running
+the generator again. `package_root` is an absolute path, so each PC needs its
+own manifest; a manifest copied from another PC is rejected unless the package
+sits at the identical path with identical bytes.
+
+The earlier `NeuralExtractor PO Helper 1.3.1.generate-activation.ps1` recorded in
+the audit table above is the local audit tool this generator was derived from.
+For the same package it produces the same file records and `package_sha256`.
+
 OpenFetch accepts exactly the following activation-manifest schema
 (JSON object; no additional or duplicate keys). This is an abridged shape
 example, not an installable manifest: the audited `files` array contains all
